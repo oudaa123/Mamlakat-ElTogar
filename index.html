@@ -4,464 +4,1533 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>مملكة التجار | المنصة الاحترافية</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Cairo', sans-serif; }
         .product-card { transition: transform 0.2s, box-shadow 0.2s; }
-        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); }
         .message-bubble { max-width: 75%; border-radius: 18px; }
         .message-sent { background: #dcf8c5; margin-right: auto; border-bottom-right-radius: 4px; }
         .message-received { background: white; margin-left: auto; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .online-indicator { width: 10px; height: 10px; border-radius: 50%; background: #25D366; display: inline-block; }
-        .chat-container { height: calc(100vh - 280px); }
         .record-btn { transition: all 0.2s; }
-        .record-btn.recording { background: #ef4444; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .record-btn.recording { background: #ef4444 !important; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         input:focus, textarea:focus, select:focus { outline: none; border-color: #22c55e; box-shadow: 0 0 0 2px rgba(34,197,94,0.2); }
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-        .animate-marquee { animation: marquee 20s linear infinite; display: inline-block; white-space: nowrap; }
+        .animate-marquee { animation: marquee 25s linear infinite; display: inline-block; white-space: nowrap; }
+
+        /* ===== شاشة الإعلانات ===== */
+        #adScreen { background: #000; min-height: 100vh; display: flex; flex-direction: column; }
+        .ad-fullscreen { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+        .ad-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0f1c3f 100%); }
+        .ad-content { position: relative; z-index: 2; width: 100%; max-width: 700px; padding: 24px; text-align: center; }
+        .ad-slide-inner { animation: adFadeIn 0.7s ease; }
+        @keyframes adFadeIn { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .ad-product-img { width: 220px; height: 220px; object-fit: cover; border-radius: 24px; margin: 0 auto 20px; display: block; border: 3px solid rgba(255,255,255,0.15); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        .ad-emoji-placeholder { width: 220px; height: 220px; border-radius: 24px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 90px; background: rgba(255,255,255,0.05); border: 3px solid rgba(255,255,255,0.1); }
+        .ad-product-name { font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 8px; text-shadow: 0 2px 20px rgba(0,0,0,0.5); }
+        .ad-product-price { font-size: 1.6rem; font-weight: 700; color: #4ade80; margin-bottom: 10px; }
+        .ad-store-name { font-size: 1rem; color: rgba(255,255,255,0.6); margin-bottom: 16px; }
+        .ad-promo-text { font-size: 1rem; color: rgba(255,255,255,0.85); line-height: 1.7; background: rgba(255,255,255,0.07); border-right: 3px solid #378ADD; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; text-align: right; }
+        .ad-progress-bar { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+        .ad-progress-fill { height: 100%; background: linear-gradient(90deg, #378ADD, #4ade80); border-radius: 2px; width: 100%; transition: none; }
+        .ad-counter-badge { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.5); color: #fff; font-size: 12px; padding: 5px 14px; border-radius: 99px; backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.1); }
+        .ad-expire-badge { position: absolute; top: 16px; left: 16px; background: rgba(255,80,80,0.3); color: #fca5a5; font-size: 11px; padding: 5px 12px; border-radius: 99px; border: 1px solid rgba(255,100,100,0.3); }
+        .ad-loading-promo { color: rgba(255,255,255,0.35); font-style: italic; font-size: 13px; }
+        .ad-nav-bar { background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,255,255,0.08); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .ad-nav-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 8px 20px; border-radius: 99px; cursor: pointer; font-family: 'Cairo', sans-serif; font-size: 13px; transition: background 0.2s; }
+        .ad-nav-btn:hover { background: rgba(255,255,255,0.2); }
+        .ad-nav-btn.primary { background: #378ADD; border-color: #378ADD; }
+        .ad-nav-btn.primary:hover { background: #2563eb; }
+        .ai-promo-box { border-right: 3px solid #a855f7; background: rgba(168,85,247,0.08); }
+
+        /* تبويب الإعلانات في الشريط العلوي */
+        .tab-btn { padding: 10px 18px; font-weight: 700; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+        .tab-btn.active { color: #15803d; border-bottom-color: #15803d; }
+        .tab-btn:hover:not(.active) { color: #15803d; }
+
+        /* ===== قسم التبرعات ===== */
+        .donation-card { background: #fff; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }
+        .donation-card:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+        .progress-bar-wrap { background: #e5e7eb; border-radius: 99px; height: 14px; overflow: hidden; margin: 10px 0; }
+        .progress-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #16a34a, #4ade80); transition: width 0.8s ease; }
+        .progress-bar-fill.urgent { background: linear-gradient(90deg, #dc2626, #f97316); }
+        .progress-bar-fill.done { background: linear-gradient(90deg, #7c3aed, #a855f7); }
+        .donor-chip { display: inline-flex; align-items: center; gap: 6px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 99px; padding: 4px 12px; font-size: 12px; color: #15803d; }
+        .donation-status-badge { font-size: 11px; padding: 3px 10px; border-radius: 99px; font-weight: 700; }
+        .badge-active { background: #dcfce7; color: #15803d; }
+        .badge-done { background: #ede9fe; color: #7c3aed; }
+        .badge-urgent { background: #fee2e2; color: #dc2626; }
+        @keyframes heartbeat { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+        .heart-anim { animation: heartbeat 1.2s infinite; display:inline-block; }
     </style>
 </head>
 <body class="bg-gray-100">
 
-    <!-- شاشة تسجيل الدخول -->
-    <div id="loginScreen" class="fixed inset-0 bg-gradient-to-br from-green-900 to-green-700 z-50 flex items-center justify-center p-4">
-        <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 text-center">
-            <div class="text-7xl mb-3 flex justify-center gap-2">🛒📱</div>
-            <h1 class="text-3xl font-black text-green-800">مملكة التجار</h1>
-            <p class="text-gray-500 text-sm">Mamlakat ElTogar | elec.ping</p>
-            <div class="mt-6 space-y-3">
-                <input type="tel" id="loginPhone" placeholder="رقم الموبايل" class="w-full border-2 rounded-xl p-3 text-center text-lg" dir="ltr">
-                <input type="password" id="loginPassword" placeholder="كلمة السر" class="w-full border-2 rounded-xl p-3 text-center text-lg" dir="ltr">
-                <button id="doLoginBtn" class="w-full bg-green-700 text-white py-3 rounded-xl font-bold hover:bg-green-800 transition">🚪 دخول</button>
-                <button id="openRequestBtn" class="w-full border-2 border-green-600 text-green-700 py-3 rounded-xl font-bold hover:bg-green-50 transition">📝 طلب تسجيل تاجر جديد</button>
+<!-- ==================== شاشة تسجيل الدخول ==================== -->
+<div id="loginScreen" class="fixed inset-0 bg-gradient-to-br from-green-900 to-green-700 z-50 flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 text-center">
+        <div class="text-7xl mb-3 flex justify-center gap-2">🛒📱</div>
+        <h1 class="text-3xl font-black text-green-800">مملكة التجار</h1>
+        <p class="text-gray-500 text-sm mb-2">Mamlakat ElTogar</p>
+        <div class="mt-6 space-y-3">
+            <input type="tel" id="loginPhone" placeholder="رقم الموبايل" class="w-full border-2 rounded-xl p-3 text-center text-lg" dir="ltr">
+            <input type="password" id="loginPassword" placeholder="كلمة السر" class="w-full border-2 rounded-xl p-3 text-center text-lg" dir="ltr">
+            <button id="doLoginBtn" class="w-full bg-green-700 text-white py-3 rounded-xl font-bold hover:bg-green-800 transition">🚪 دخول</button>
+            <button id="openRequestBtn" class="w-full border-2 border-green-600 text-green-700 py-3 rounded-xl font-bold hover:bg-green-50 transition">📝 طلب تسجيل تاجر جديد</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== مودال طلب التسجيل ==================== -->
+<div id="requestModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6">
+        <h2 class="text-2xl font-bold text-green-800 text-center mb-1">📝 طلب تسجيل تاجر جديد</h2>
+        <p class="text-gray-500 text-sm text-center mb-4">سيتم إرسال طلبك للمدير للتفعيل</p>
+        <input type="text" id="reqName" placeholder="الاسم كامل" class="w-full border rounded-xl p-3 mb-3">
+        <input type="tel" id="reqPhone" placeholder="رقم الموبايل" class="w-full border rounded-xl p-3 mb-3" dir="ltr">
+        <input type="text" id="reqStore" placeholder="اسم المحل (اتركه فارغاً لاستخدام نفس الاسم)" class="w-full border rounded-xl p-3 mb-3">
+        <input type="text" id="reqClientWord" placeholder="كلمة مميزة (اختياري)" class="w-full border rounded-xl p-3 mb-4">
+        <button id="submitRequestBtn" class="bg-green-700 text-white w-full py-3 rounded-xl font-bold hover:bg-green-800">📤 إرسال الطلب</button>
+        <button id="closeRequestModal" class="bg-gray-300 w-full mt-2 py-2 rounded-xl">إلغاء</button>
+    </div>
+</div>
+
+<!-- ==================== التطبيق الرئيسي ==================== -->
+<div id="appScreen" class="hidden">
+
+    <!-- شريط الإعلانات المتحرك -->
+    <div class="bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-2 overflow-hidden whitespace-nowrap shadow-md">
+        <div id="adsSlider" class="inline-block animate-marquee px-4">🔥 مملكة التجار | تواصل مع آلاف التجار الآن 🔥</div>
+    </div>
+
+    <!-- الهيدر -->
+    <div class="bg-white shadow-md sticky top-0 z-40 px-4 py-2 flex flex-wrap justify-between items-center border-b gap-2">
+        <div class="flex items-center gap-3">
+            <div class="bg-gradient-to-r from-green-700 to-green-500 text-white p-2 rounded-2xl text-xl">🛒📱</div>
+            <div>
+                <h1 class="text-xl font-black text-green-800">مملكة التجار</h1>
+                <p class="text-[10px] text-gray-400 -mt-1" id="welcomeMsg">مرحباً بك</p>
             </div>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+            <button id="openProfileBtn" class="bg-purple-600 text-white px-3 py-2 rounded-full text-sm font-bold hover:bg-purple-700">👤 ملفي</button>
+            <button id="openAdminPanelBtn" class="bg-indigo-600 text-white px-3 py-2 rounded-full text-sm font-bold hidden hover:bg-indigo-700">👑 لوحة التحكم</button>
+            <button id="openAddProductBtn" class="bg-green-600 text-white px-3 py-2 rounded-full text-sm font-bold hover:bg-green-700">➕ إضافة منتج</button>
+            <button id="logoutMainBtn" class="bg-red-500 text-white px-3 py-2 rounded-full text-sm hover:bg-red-600">🚪 خروج</button>
         </div>
     </div>
 
-    <!-- مودال طلب تسجيل -->
-    <div id="requestModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6">
-            <h2 class="text-2xl font-bold text-green-800 text-center">📝 طلب تسجيل تاجر جديد</h2>
-            <p class="text-gray-500 text-sm text-center mb-4">سيتم إرسال طلبك للمدير للتفعيل</p>
-            <input type="text" id="reqName" placeholder="الاسم كامل" class="w-full border rounded-xl p-3 mb-3">
-            <input type="tel" id="reqPhone" placeholder="رقم الموبايل" class="w-full border rounded-xl p-3 mb-3" dir="ltr">
-            <input type="text" id="reqStore" placeholder="اسم المحل (اتركه فارغاً لاستخدام نفس الاسم)" class="w-full border rounded-xl p-3 mb-3">
-            <input type="text" id="reqClientWord" placeholder="كلمة العميل (اختر كلمة خاصة بك)" class="w-full border rounded-xl p-3 mb-4">
-            <button id="submitRequestBtn" class="bg-green-700 text-white w-full py-3 rounded-xl font-bold hover:bg-green-800">📤 إرسال الطلب</button>
-            <button id="closeRequestModal" class="bg-gray-300 w-full mt-2 py-2 rounded-xl">إلغاء</button>
+    <!-- التبويبات -->
+    <div class="border-b bg-white overflow-x-auto">
+        <div class="flex max-w-7xl mx-auto px-4">
+            <button id="tabProducts" class="tab-btn active">🛍️ المنتجات</button>
+            <button id="tabAds" class="tab-btn">📺 شاشة الإعلانات</button>
+            <button id="tabDonations" class="tab-btn">❤️ التبرعات</button>
+            <button id="tabChat" class="tab-btn">💬 الشات العام</button>
         </div>
     </div>
 
-    <!-- التطبيق الرئيسي -->
-    <div id="appScreen" class="hidden">
-        <!-- شريط الإعلانات -->
-        <div id="adsBar" class="bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-2 overflow-hidden whitespace-nowrap shadow-md">
-            <div id="adsSlider" class="inline-block animate-marquee px-4"></div>
-        </div>
-
-        <!-- الهيدر -->
-        <div class="bg-white shadow-md sticky top-0 z-40 px-4 py-2 flex flex-wrap justify-between items-center border-b gap-2">
-            <div class="flex items-center gap-3">
-                <div class="bg-gradient-to-r from-green-700 to-green-500 text-white p-2 rounded-2xl flex gap-1 text-xl">🛒📱</div>
-                <div><h1 class="text-xl font-black text-green-800">مملكة التجار</h1><p class="text-[10px] text-gray-400 -mt-1" id="welcomeMsg">مرحباً بك</p></div>
-            </div>
-            <div class="flex gap-2 flex-wrap">
-                <button id="openProfileBtn" class="bg-purple-600 text-white px-3 py-2 rounded-full text-sm font-bold hover:bg-purple-700">👤 ملفي</button>
-                <button id="openChatBtn" class="bg-blue-600 text-white px-3 py-2 rounded-full text-sm font-bold hover:bg-blue-700">💬 الشات العام</button>
-                <button id="openAdminPanelBtn" class="bg-indigo-600 text-white px-3 py-2 rounded-full text-sm font-bold hidden hover:bg-indigo-700">👑 لوحة التحكم</button>
-                <button id="openAddProductBtn" class="bg-green-600 text-white px-3 py-2 rounded-full text-sm font-bold hover:bg-green-700">➕ إضافة منتج</button>
-                <button id="logoutMainBtn" class="bg-red-500 text-white px-3 py-2 rounded-full text-sm hover:bg-red-600">🚪 خروج</button>
+    <!-- ==================== قسم المنتجات ==================== -->
+    <div id="productsSection" class="max-w-7xl mx-auto px-4 py-4">
+        <!-- بانر المنتجات -->
+        <div class="bg-gradient-to-r from-green-800 to-green-600 rounded-3xl shadow-xl overflow-hidden relative h-56 mb-6">
+            <div class="absolute inset-0 flex flex-col md:flex-row items-center justify-between p-6 text-white">
+                <div class="text-right">
+                    <span class="bg-orange-500 text-xs px-3 py-1 rounded-full">🔥 مملكة التجار</span>
+                    <h2 id="bannerName" class="text-2xl font-bold mt-2">مرحباً بكم</h2>
+                    <p id="bannerStore" class="text-green-200"></p>
+                    <p id="bannerPrice" class="text-xl font-bold mt-2"></p>
+                    <a id="bannerWhatsapp" href="#" target="_blank" class="inline-block mt-2 bg-white text-green-700 px-4 py-1 rounded-full text-sm font-bold">📲 تواصل</a>
+                </div>
+                <img id="bannerImage" src="" class="w-32 h-32 rounded-2xl object-cover hidden md:block shadow-lg">
             </div>
         </div>
 
-        <!-- تبويبات -->
-        <div class="border-b bg-white"><div class="flex max-w-7xl mx-auto px-4">
-            <button id="tabProducts" class="py-3 px-6 font-bold text-green-700 border-b-2 border-green-700">🛍️ المنتجات</button>
-            <button id="tabChat" class="py-3 px-6 font-bold text-gray-500 hover:text-green-700">💬 الشات العام</button>
-        </div></div>
+        <!-- شريط البحث -->
+        <div class="flex gap-3 mb-5">
+            <input type="text" id="searchInput" placeholder="🔍 ابحث عن منتج أو متجر..." class="flex-1 border-2 rounded-2xl px-4 py-2 text-sm focus:border-green-500">
+            <button onclick="filterProducts()" class="bg-green-600 text-white px-5 py-2 rounded-2xl font-bold hover:bg-green-700 text-sm">بحث</button>
+            <button onclick="clearSearch()" class="bg-gray-200 text-gray-600 px-4 py-2 rounded-2xl text-sm">مسح</button>
+        </div>
 
-        <!-- قسم المنتجات -->
-        <div id="productsSection" class="max-w-7xl mx-auto px-4 py-4">
-            <div id="bannerContainer" class="bg-gradient-to-r from-green-800 to-green-600 rounded-3xl shadow-xl overflow-hidden relative h-56 mb-6">
-                <div id="bannerContent" class="absolute inset-0 flex flex-col md:flex-row items-center justify-between p-6 text-white">
-                    <div class="text-right">
-                        <span class="bg-orange-500 text-xs px-3 py-1 rounded-full">🔥 مملكة التجار</span>
-                        <h2 id="bannerName" class="text-2xl font-bold mt-2">مرحباً بكم</h2>
-                        <p id="bannerStore" class="text-green-200"></p>
-                        <p id="bannerPrice" class="text-xl font-bold mt-2"></p>
-                        <a id="bannerWhatsapp" href="#" target="_blank" class="inline-block mt-2 bg-white text-green-700 px-4 py-1 rounded-full text-sm font-bold">📲 تواصل</a>
+        <div class="flex justify-between items-center mb-3">
+            <h2 class="font-bold text-xl text-green-800">🆕 أحدث المنتجات</h2>
+            <button id="refreshProducts" class="text-green-600 text-sm hover:underline">🔄 تحديث</button>
+        </div>
+        <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            <div class="col-span-full text-center py-10 text-gray-500">✨ جاري التحميل ✨</div>
+        </div>
+    </div>
+
+    <!-- ==================== شاشة الإعلانات ==================== -->
+    <div id="adsSection" class="hidden">
+        <div id="adScreen">
+            <!-- منطقة الإعلان الكاملة -->
+            <div class="ad-fullscreen" id="adFullscreen">
+                <div class="ad-bg"></div>
+
+                <!-- عداد الشرائح -->
+                <div class="ad-counter-badge" id="adCounterBadge">1 / 1</div>
+                <div class="ad-expire-badge" id="adExpireBadge" style="display:none">⏰ ينتهي قريباً</div>
+
+                <!-- محتوى الإعلان -->
+                <div class="ad-content">
+                    <div class="ad-slide-inner" id="adSlideInner">
+                        <div id="adImageArea"></div>
+                        <p class="ad-product-name" id="adProductName">جاري التحميل...</p>
+                        <p class="ad-product-price" id="adProductPrice"></p>
+                        <p class="ad-store-name" id="adStoreName"></p>
+                        <div class="ad-promo-text ai-promo-box" id="adPromoText">
+                            <span class="ad-loading-promo">🤖 جارٍ توليد النص الترويجي بالذكاء الاصطناعي...</span>
+                        </div>
+                        <a id="adWhatsappBtn" href="#" target="_blank"
+                           class="inline-block bg-green-500 text-white px-8 py-3 rounded-full font-bold text-sm hover:bg-green-600 transition mb-2">
+                           📲 تواصل مع التاجر على واتساب
+                        </a>
                     </div>
-                    <img id="bannerImage" src="" class="w-32 h-32 rounded-2xl object-cover hidden md:block shadow-lg">
+                    <div class="ad-progress-bar">
+                        <div class="ad-progress-fill" id="adProgressFill"></div>
+                    </div>
                 </div>
-            </div>
-            <div class="flex justify-between items-center mb-3"><h2 class="font-bold text-xl text-green-800">🆕 أحدث المنتجات</h2><button id="refreshProducts" class="text-green-600 text-sm hover:underline">تحديث</button></div>
-            <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"><div class="col-span-full text-center py-10 text-gray-500">✨ جاري التحميل ✨</div></div>
-        </div>
 
-        <!-- قسم الشات -->
-        <div id="chatSection" class="hidden max-w-7xl mx-auto px-4 py-4">
-            <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
-                <div class="bg-green-700 text-white p-4"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-700 text-xl">💬</div><div><h3 class="font-bold">المجموعة العامة - مملكة التجار</h3><p class="text-xs text-green-200"><span class="online-indicator"></span> جميع التجار متصلون</p></div></div></div>
-                <div id="chatMessages" class="chat-container overflow-y-auto p-4 space-y-3 bg-gray-50" style="height: 500px;"><div class="text-center text-gray-400 py-10">✨ مرحباً بك في المجموعة العامة ✨</div></div>
-                <div class="bg-white p-3 border-t flex gap-2 items-center">
-                    <button id="emojiBtn" class="text-2xl p-2 hover:bg-gray-100 rounded-full">😊</button>
-                    <button id="attachImageBtn" class="text-2xl p-2 hover:bg-gray-100 rounded-full">📷</button>
-                    <button id="voiceRecordBtn" class="record-btn bg-gray-200 p-3 rounded-full w-12 h-12 flex items-center justify-center text-xl hover:bg-gray-300">🎤</button>
-                    <input type="text" id="chatInput" placeholder="اكتب رسالة..." class="flex-1 border rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
-                    <button id="sendChatBtn" class="bg-green-600 text-white p-3 rounded-full w-12 h-12 flex items-center justify-center hover:bg-green-700">➤</button>
+                <!-- شريط أدوات الإعلانات -->
+                <div class="ad-nav-bar" style="width:100%">
+                    <div style="display:flex;gap:8px">
+                        <button class="ad-nav-btn" onclick="prevAd()">◀ السابق</button>
+                        <button class="ad-nav-btn" id="adPauseBtn" onclick="toggleAdPause()">⏸ إيقاف</button>
+                        <button class="ad-nav-btn" onclick="nextAd()">التالي ▶</button>
+                    </div>
+                    <div style="color:rgba(255,255,255,0.5);font-size:12px" id="adExpireInfo"></div>
+                    <button class="ad-nav-btn primary" onclick="switchTab('products')">🛍️ عودة للمنتجات</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- مودال الملف الشخصي -->
-    <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6">
-            <h2 class="text-2xl font-bold text-green-800 mb-4">👤 بيانات متجري الثابتة</h2>
-            <p class="text-sm text-gray-500 mb-3">هذه البيانات تحفظ مرة واحدة وتظهر تلقائياً في كل منتج</p>
-            <input type="text" id="profileStoreName" placeholder="اسم المحل *" class="w-full border rounded-xl p-3 mb-3">
-            <textarea id="profileAddress" placeholder="العنوان الكامل" class="w-full border rounded-xl p-3 mb-3" rows="2"></textarea>
-            <input type="tel" id="profileWhatsapp" placeholder="رقم واتساب أساسي *" class="w-full border rounded-xl p-3 mb-3">
-            <input type="tel" id="profileWhatsapp2" placeholder="رقم واتساب إضافي" class="w-full border rounded-xl p-3 mb-3">
-            <input type="tel" id="profilePhone" placeholder="رقم هاتف إضافي" class="w-full border rounded-xl p-3 mb-4">
-            <div class="flex gap-2"><button id="saveProfileBtn" class="bg-green-600 text-white flex-1 py-3 rounded-xl font-bold">💾 حفظ البيانات</button><button id="closeProfileModal" class="bg-gray-300 flex-1 py-3 rounded-xl">إلغاء</button></div>
-        </div>
-    </div>
+    <!-- ==================== قسم الشات ==================== -->
 
-    <!-- مودال إضافة منتج -->
-    <div id="productModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4 overflow-y-auto">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6">
-            <h2 class="text-2xl font-bold text-green-800 mb-4">➕ إضافة منتج جديد</h2>
-            <div class="mb-3"><label class="block text-sm font-bold text-gray-700 mb-1">📷 صورة المنتج</label><input type="file" id="prodImage" accept="image/*" class="w-full border rounded-xl p-2"><div id="imagePreview" class="mt-2 hidden"><img id="previewImg" class="w-24 h-24 rounded-xl object-cover border"></div></div>
-            <input type="text" id="prodName" placeholder="اسم المنتج" class="w-full border rounded-xl p-3 mb-3">
-            <div class="mb-3"><button id="aiGenerateBtn" class="bg-purple-600 text-white px-3 py-1 rounded-full text-sm">🤖 توليد وصف</button><textarea id="prodDesc" placeholder="وصف المنتج" class="w-full border rounded-xl p-3 mt-2" rows="3"></textarea></div>
-            <input type="text" id="prodPrice" placeholder="السعر (اختياري)" class="w-full border rounded-xl p-3 mb-4">
-            <div class="flex gap-2"><button id="submitProductBtn" class="bg-green-600 text-white flex-1 py-3 rounded-xl font-bold">📤 نشر</button><button id="closeProductModal" class="bg-gray-300 flex-1 py-3 rounded-xl">إلغاء</button></div>
-        </div>
-    </div>
+    <!-- ==================== قسم التبرعات ==================== -->
+    <div id="donationsSection" class="hidden max-w-5xl mx-auto px-4 py-6">
 
-    <!-- مودال تعديل المنتج -->
-    <div id="editProductModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6">
-            <h2 class="text-xl font-bold text-green-800 mb-4">✏️ تعديل المنتج</h2>
-            <input type="hidden" id="editProductId"><input type="text" id="editName" placeholder="الاسم" class="w-full border rounded-xl p-2 mb-2"><textarea id="editDesc" placeholder="الوصف" class="w-full border rounded-xl p-2 mb-2" rows="2"></textarea><input type="text" id="editPrice" placeholder="السعر" class="w-full border rounded-xl p-2 mb-4">
-            <div class="flex gap-2"><button id="updateProductBtn" class="bg-blue-600 text-white flex-1 py-2 rounded-xl">💾 تحديث</button><button id="deleteProductBtn" class="bg-red-600 text-white flex-1 py-2 rounded-xl">🗑 حذف</button><button id="closeEditModal" class="bg-gray-300 flex-1 py-2 rounded-xl">إلغاء</button></div>
+        <!-- هيدر التبرعات -->
+        <div class="bg-gradient-to-r from-rose-600 to-pink-500 rounded-3xl p-6 text-white mb-6 shadow-xl">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-black mb-1"><span class="heart-anim">❤️</span> منصة التبرعات</h2>
+                    <p class="text-rose-100 text-sm">ساعد زميلك التاجر — كل مبلغ صغير يصنع فرقاً كبيراً</p>
+                </div>
+                <button id="openNewDonationCaseBtn" class="bg-white text-rose-600 font-bold px-6 py-3 rounded-2xl hover:bg-rose-50 transition shadow-lg text-sm">
+                    ➕ نشر حالة احتياج
+                </button>
+            </div>
+            <!-- إحصائيات سريعة -->
+            <div class="grid grid-cols-3 gap-3 mt-5">
+                <div class="bg-white bg-opacity-20 rounded-2xl p-3 text-center">
+                    <p class="text-2xl font-black" id="statTotalCases">0</p>
+                    <p class="text-xs text-rose-100">حالة منشورة</p>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-2xl p-3 text-center">
+                    <p class="text-2xl font-black" id="statTotalDonors">0</p>
+                    <p class="text-xs text-rose-100">متبرع</p>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-2xl p-3 text-center">
+                    <p class="text-2xl font-black" id="statTotalAmount">0</p>
+                    <p class="text-xs text-rose-100">ج.م تم جمعها</p>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- لوحة تحكم ADMIN -->
-    <div id="adminPanel" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 overflow-y-auto p-4">
-        <div class="max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl my-8">
-            <div class="bg-green-700 text-white p-4 rounded-t-3xl flex justify-between items-center"><h2 class="text-2xl font-bold">👑 لوحة تحكم المدير</h2><button id="closeAdminPanel" class="text-white text-3xl hover:text-red-300">×</button></div>
-            <div class="p-6">
-                <div class="bg-green-50 rounded-2xl p-4 mb-6"><h3 class="font-bold text-lg text-green-800 mb-3">➕ إضافة تاجر جديد</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-3"><input type="text" id="adminName" placeholder="الاسم الكامل" class="border rounded-xl p-2"><input type="tel" id="adminPhone" placeholder="رقم الموبايل" class="border rounded-xl p-2"><input type="text" id="adminStore" placeholder="اسم المحل" class="border rounded-xl p-2"><input type="text" id="adminPassword" placeholder="كلمة السر" class="border rounded-xl p-2" value="mkt123"></div><button id="addUserBtn" class="mt-3 bg-green-600 text-white px-6 py-2 rounded-xl font-bold">➕ إضافة التاجر</button></div>
-                <div class="bg-yellow-50 rounded-2xl p-4 mb-6"><h3 class="font-bold text-lg text-yellow-800 mb-3">📝 طلبات تسجيل جديدة</h3><div id="requestsList" class="space-y-2 max-h-60 overflow-y-auto"><div class="text-gray-500 text-center py-4">جاري التحميل...</div></div></div>
-                <div class="bg-blue-50 rounded-2xl p-4"><h3 class="font-bold text-lg text-blue-800 mb-3">📋 التجار المسجلين</h3><div id="usersList" class="space-y-2 max-h-80 overflow-y-auto"><div class="text-gray-500 text-center py-4">جاري التحميل...</div></div></div>
+        <!-- قائمة الحالات -->
+        <div id="donationCasesList" class="space-y-5">
+            <div class="text-center py-12 text-gray-400">
+                <div class="text-5xl mb-3">💝</div>
+                <p>جارٍ تحميل الحالات...</p>
             </div>
         </div>
     </div>
 
-    <script>
-        // ====================== Firebase Config ======================
-        const firebaseConfig = {
-            apiKey: "AIzaSyC7eeoGULzuYKNV5dbWSp6CnWoilf7LsxE",
-            authDomain: "mamlakat-eltogar.firebaseapp.com",
-            databaseURL: "https://mamlakat-eltogar-default-rtdb.firebaseio.com",
-            projectId: "mamlakat-eltogar",
-            storageBucket: "mamlakat-eltogar.firebasestorage.app",
-            appId: "1:331178086888:web:e555e5a5f1b11dff01145d"
-        };
+    <div id="chatSection" class="hidden max-w-7xl mx-auto px-4 py-4">
+        <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+            <div class="bg-green-700 text-white p-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-700 text-xl">💬</div>
+                    <div>
+                        <h3 class="font-bold">المجموعة العامة - مملكة التجار</h3>
+                        <p class="text-xs text-green-200"><span class="online-indicator"></span> جميع التجار متصلون</p>
+                    </div>
+                </div>
+            </div>
+            <div id="chatMessages" class="overflow-y-auto p-4 space-y-3 bg-gray-50" style="height:500px">
+                <div class="text-center text-gray-400 py-10">✨ مرحباً بك في المجموعة العامة ✨</div>
+            </div>
+            <div class="bg-white p-3 border-t flex gap-2 items-center">
+                <button id="emojiBtn" class="text-2xl p-2 hover:bg-gray-100 rounded-full">😊</button>
+                <button id="attachImageBtn" class="text-2xl p-2 hover:bg-gray-100 rounded-full">📷</button>
+                <button id="voiceRecordBtn" class="record-btn bg-gray-200 p-3 rounded-full w-12 h-12 flex items-center justify-center text-xl hover:bg-gray-300">🎤</button>
+                <input type="text" id="chatInput" placeholder="اكتب رسالة..." class="flex-1 border rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
+                <button id="sendChatBtn" class="bg-green-600 text-white p-3 rounded-full w-12 h-12 flex items-center justify-center hover:bg-green-700 text-lg">➤</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-        // Cloudinary Config - ⚠️ استبدل your_cloud_name باسم حسابك
-        const CLOUDINARY_CLOUD_NAME = "dfufqyxew";
-        const CLOUDINARY_UPLOAD_PRESET = "ml_default";
+<!-- ==================== مودال نشر حالة تبرع ==================== -->
+<div id="donationCaseModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 my-4">
+        <h2 class="text-2xl font-bold text-rose-700 mb-1">❤️ نشر حالة احتياج</h2>
+        <p class="text-gray-500 text-sm mb-4">اشرح وضعك وحدد المبلغ المطلوب — التجار هيساعدوك</p>
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        <div class="mb-3">
+            <label class="block text-sm font-bold text-gray-700 mb-1">📷 صورة توضيحية (اختياري)</label>
+            <input type="file" id="donationCaseImage" accept="image/*" class="w-full border rounded-xl p-2">
+            <div id="donationImagePreview" class="mt-2 hidden">
+                <img id="donationPreviewImg" class="w-full h-40 rounded-xl object-cover border">
+            </div>
+        </div>
 
-        // ====================== رفع الصور إلى Cloudinary ======================
-        async function uploadImageToCloudinary(file) {
-            return new Promise((resolve, reject) => {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-                    method: 'POST',
-                    body: formData
-                }).then(response => response.json()).then(data => {
-                    if(data.secure_url) resolve(data.secure_url);
-                    else reject(new Error('فشل رفع الصورة'));
-                }).catch(error => reject(error));
-            });
+        <input type="text" id="donationCaseTitle" placeholder="عنوان الحالة (مثال: محتاج مساعدة لتجديد محلي)" class="w-full border rounded-xl p-3 mb-3">
+        <textarea id="donationCaseDesc" placeholder="اشرح وضعك بالتفصيل..." class="w-full border rounded-xl p-3 mb-3" rows="3"></textarea>
+
+        <div class="flex gap-3 mb-3">
+            <div class="flex-1">
+                <label class="block text-xs text-gray-500 mb-1">المبلغ المطلوب (ج.م) *</label>
+                <input type="number" id="donationCaseTarget" placeholder="مثال: 5000" class="w-full border rounded-xl p-3 font-bold text-lg text-center">
+            </div>
+            <div class="flex-1">
+                <label class="block text-xs text-gray-500 mb-1">رقم محفظتك / واتساب *</label>
+                <input type="tel" id="donationCaseWallet" placeholder="01xxxxxxxxx" class="w-full border rounded-xl p-3" dir="ltr">
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-xs text-gray-500 mb-1">طرق الدفع المقبولة</label>
+            <div class="flex gap-2 flex-wrap">
+                <label class="flex items-center gap-1 text-sm cursor-pointer"><input type="checkbox" id="payVodafone" class="rounded"> فودافون كاش</label>
+                <label class="flex items-center gap-1 text-sm cursor-pointer"><input type="checkbox" id="payInstapay" class="rounded"> إنستاباي</label>
+                <label class="flex items-center gap-1 text-sm cursor-pointer"><input type="checkbox" id="payBank" class="rounded"> تحويل بنكي</label>
+                <label class="flex items-center gap-1 text-sm cursor-pointer"><input type="checkbox" id="payHand" class="rounded"> يداً بيد</label>
+            </div>
+        </div>
+
+        <div class="bg-rose-50 border border-rose-200 rounded-xl p-3 mb-4 text-sm text-rose-800">
+            ⚠️ بنشر الحالة ده، بتأكد إن المعلومات صحيحة وإن التبرعات هتوصل فعلاً للهدف المذكور.
+        </div>
+
+        <div class="flex gap-2">
+            <button id="submitDonationCaseBtn" class="bg-rose-600 text-white flex-1 py-3 rounded-xl font-bold hover:bg-rose-700">📤 نشر الحالة</button>
+            <button id="closeDonationCaseModal" class="bg-gray-300 flex-1 py-3 rounded-xl">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== مودال التبرع لحالة ==================== -->
+<div id="donateModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6">
+        <h2 class="text-2xl font-bold text-green-700 mb-1">💚 تبرع لهذه الحالة</h2>
+        <input type="hidden" id="donateCaseId">
+
+        <div id="donateModalCaseInfo" class="bg-gray-50 rounded-2xl p-4 mb-4 text-sm text-gray-700"></div>
+
+        <div class="mb-3">
+            <label class="block text-sm font-bold text-gray-700 mb-1">💰 المبلغ الذي ستتبرع به (ج.م) *</label>
+            <input type="number" id="donateAmount" placeholder="أدخل المبلغ" class="w-full border-2 rounded-xl p-3 text-center text-xl font-bold">
+        </div>
+
+        <div class="mb-3">
+            <label class="block text-sm font-bold text-gray-700 mb-1">📷 صورة إيصال التحويل (اختياري)</label>
+            <input type="file" id="donateReceiptImage" accept="image/*" class="w-full border rounded-xl p-2">
+            <div id="donateReceiptPreview" class="mt-2 hidden">
+                <img id="donateReceiptImg" class="w-full h-32 rounded-xl object-cover border">
+            </div>
+        </div>
+
+        <input type="text" id="donateNote" placeholder="ملاحظة (اختياري) — مثلاً: اتبعت فودافون كاش" class="w-full border rounded-xl p-3 mb-4 text-sm">
+
+        <div class="bg-green-50 border border-green-200 rounded-xl p-3 mb-4 text-sm text-green-800">
+            ✅ بعد تأكيدك، سيتم تسجيل تبرعك وإشعار صاحب الحالة. صور الإيصال تظهر للتحقق.
+        </div>
+
+        <div class="flex gap-2">
+            <button id="submitDonateBtn" class="bg-green-600 text-white flex-1 py-3 rounded-xl font-bold hover:bg-green-700">❤️ تأكيد التبرع</button>
+            <button id="closeDonateModal" class="bg-gray-300 flex-1 py-3 rounded-xl">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== مودال تفاصيل الحالة والمتبرعين ==================== -->
+<div id="caseDetailModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 my-4">
+        <div class="flex justify-between items-start mb-4">
+            <h2 class="text-xl font-bold text-gray-800">تفاصيل الحالة والمتبرعون</h2>
+            <button id="closeCaseDetailModal" class="text-gray-400 hover:text-gray-600 text-3xl leading-none">×</button>
+        </div>
+        <div id="caseDetailContent"></div>
+    </div>
+</div>
+
+<!-- ==================== مودال الملف الشخصي ==================== -->
+<div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6">
+        <h2 class="text-2xl font-bold text-green-800 mb-1">👤 بيانات متجري</h2>
+        <p class="text-sm text-gray-500 mb-4">تظهر تلقائياً في كل منتج تضيفه</p>
+        <input type="text" id="profileStoreName" placeholder="اسم المحل *" class="w-full border rounded-xl p-3 mb-3">
+        <textarea id="profileAddress" placeholder="العنوان الكامل" class="w-full border rounded-xl p-3 mb-3" rows="2"></textarea>
+        <input type="tel" id="profileWhatsapp" placeholder="رقم واتساب أساسي *" class="w-full border rounded-xl p-3 mb-3" dir="ltr">
+        <input type="tel" id="profileWhatsapp2" placeholder="رقم واتساب إضافي" class="w-full border rounded-xl p-3 mb-3" dir="ltr">
+        <input type="tel" id="profilePhone" placeholder="رقم هاتف إضافي" class="w-full border rounded-xl p-3 mb-4" dir="ltr">
+        <div class="flex gap-2">
+            <button id="saveProfileBtn" class="bg-green-600 text-white flex-1 py-3 rounded-xl font-bold">💾 حفظ</button>
+            <button id="closeProfileModal" class="bg-gray-300 flex-1 py-3 rounded-xl">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== مودال إضافة منتج ==================== -->
+<div id="productModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 my-4">
+        <h2 class="text-2xl font-bold text-green-800 mb-4">➕ إضافة منتج جديد</h2>
+        <div class="mb-3">
+            <label class="block text-sm font-bold text-gray-700 mb-1">📷 صورة المنتج</label>
+            <input type="file" id="prodImage" accept="image/*" class="w-full border rounded-xl p-2">
+            <div id="imagePreview" class="mt-2 hidden">
+                <img id="previewImg" class="w-24 h-24 rounded-xl object-cover border">
+            </div>
+        </div>
+        <input type="text" id="prodName" placeholder="اسم المنتج *" class="w-full border rounded-xl p-3 mb-3">
+        <div class="mb-3">
+            <div class="flex items-center gap-2 mb-2">
+                <button id="aiGenerateBtn" class="bg-purple-600 text-white px-4 py-1 rounded-full text-sm hover:bg-purple-700">🤖 توليد وصف بالذكاء الاصطناعي</button>
+                <span id="aiGenerateStatus" class="text-xs text-gray-400"></span>
+            </div>
+            <textarea id="prodDesc" placeholder="وصف المنتج" class="w-full border rounded-xl p-3" rows="3"></textarea>
+        </div>
+        <input type="text" id="prodPrice" placeholder="السعر (اختياري)" class="w-full border rounded-xl p-3 mb-4">
+        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4 text-sm text-yellow-800">
+            ⏰ سيظهر منتجك في شاشة الإعلانات لمدة <strong>48 ساعة</strong> ثم يختفي تلقائياً
+        </div>
+        <div class="flex gap-2">
+            <button id="submitProductBtn" class="bg-green-600 text-white flex-1 py-3 rounded-xl font-bold hover:bg-green-700">📤 نشر المنتج</button>
+            <button id="closeProductModal" class="bg-gray-300 flex-1 py-3 rounded-xl">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== مودال تعديل المنتج ==================== -->
+<div id="editProductModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6">
+        <h2 class="text-xl font-bold text-green-800 mb-4">✏️ تعديل المنتج</h2>
+        <input type="hidden" id="editProductId">
+        <input type="text" id="editName" placeholder="الاسم" class="w-full border rounded-xl p-2 mb-2">
+        <textarea id="editDesc" placeholder="الوصف" class="w-full border rounded-xl p-2 mb-2" rows="2"></textarea>
+        <input type="text" id="editPrice" placeholder="السعر" class="w-full border rounded-xl p-2 mb-4">
+        <div class="flex gap-2">
+            <button id="updateProductBtn" class="bg-blue-600 text-white flex-1 py-2 rounded-xl font-bold">💾 تحديث</button>
+            <button id="deleteProductBtn" class="bg-red-600 text-white flex-1 py-2 rounded-xl font-bold">🗑 حذف</button>
+            <button id="closeEditModal" class="bg-gray-300 flex-1 py-2 rounded-xl">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== لوحة تحكم المدير ==================== -->
+<div id="adminPanel" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 overflow-y-auto p-4">
+    <div class="max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl my-8">
+        <div class="bg-green-700 text-white p-4 rounded-t-3xl flex justify-between items-center">
+            <h2 class="text-2xl font-bold">👑 لوحة تحكم المدير</h2>
+            <button id="closeAdminPanel" class="text-white text-3xl hover:text-red-300 leading-none">×</button>
+        </div>
+        <div class="p-6 space-y-6">
+            <!-- إضافة تاجر -->
+            <div class="bg-green-50 rounded-2xl p-4">
+                <h3 class="font-bold text-lg text-green-800 mb-3">➕ إضافة تاجر جديد</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input type="text" id="adminName" placeholder="الاسم الكامل" class="border rounded-xl p-2">
+                    <input type="tel" id="adminPhone" placeholder="رقم الموبايل" class="border rounded-xl p-2" dir="ltr">
+                    <input type="text" id="adminStore" placeholder="اسم المحل" class="border rounded-xl p-2">
+                    <input type="text" id="adminPassword" placeholder="كلمة السر" class="border rounded-xl p-2" value="mkt123">
+                </div>
+                <button id="addUserBtn" class="mt-3 bg-green-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-green-700">➕ إضافة التاجر</button>
+            </div>
+            <!-- الطلبات -->
+            <div class="bg-yellow-50 rounded-2xl p-4">
+                <h3 class="font-bold text-lg text-yellow-800 mb-3">📝 طلبات تسجيل جديدة</h3>
+                <div id="requestsList" class="space-y-2 max-h-60 overflow-y-auto">
+                    <div class="text-gray-500 text-center py-4">جاري التحميل...</div>
+                </div>
+            </div>
+            <!-- التجار المسجلون -->
+            <div class="bg-blue-50 rounded-2xl p-4">
+                <h3 class="font-bold text-lg text-blue-800 mb-3">📋 التجار المسجلين</h3>
+                <div id="usersList" class="space-y-2 max-h-80 overflow-y-auto">
+                    <div class="text-gray-500 text-center py-4">جاري التحميل...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ==================== Firebase Config ====================
+const firebaseConfig = {
+    apiKey: "AIzaSyC7eeoGULzuYKNV5dbWSp6CnWoilf7LsxE",
+    authDomain: "mamlakat-eltogar.firebaseapp.com",
+    databaseURL: "https://mamlakat-eltogar-default-rtdb.firebaseio.com",
+    projectId: "mamlakat-eltogar",
+    storageBucket: "mamlakat-eltogar.firebasestorage.app",
+    appId: "1:331178086888:web:e555e5a5f1b11dff01145d"
+};
+const CLOUDINARY_CLOUD_NAME = "dfufqyxew";
+const CLOUDINARY_UPLOAD_PRESET = "ml_default";
+const ADMIN_NUMBER = "01022495795";
+const AD_DURATION_MS = 48 * 60 * 60 * 1000; // 48 ساعة
+const AD_SLIDE_SECONDS = 5;
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let currentUserPhone = null, currentUserData = null, isAdmin = false;
+let allProducts = [];
+let adProducts = [], adIndex = 0, adTimer = null, adPaused = false;
+let bannerProducts = [], bannerIndex = 0, bannerInterval = null;
+
+// ==================== رفع الصور ====================
+async function uploadImageToCloudinary(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.secure_url) return data.secure_url;
+    throw new Error('فشل رفع الصورة');
+}
+
+// ==================== إعداد المدير ====================
+async function setupAdminIfNotExists() {
+    await db.ref(`users/${ADMIN_NUMBER}`).set({
+        name: "المدير العام", storeName: "مملكة التجار", password: "1234",
+        active: true, isAdmin: true, createdAt: Date.now()
+    });
+}
+setupAdminIfNotExists();
+
+// ==================== تسجيل الدخول ====================
+async function loginUser(phone, password) {
+    const snap = await db.ref(`users/${phone}`).once('value');
+    const user = snap.val();
+    if (user && user.password === password && user.active === true) {
+        currentUserPhone = phone;
+        currentUserData = user;
+        isAdmin = (phone === ADMIN_NUMBER);
+        localStorage.setItem('loggedInPhone', phone);
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('appScreen').classList.remove('hidden');
+        document.getElementById('welcomeMsg').innerHTML = `مرحباً ${user.name || 'تاجر'} ${isAdmin ? '👑' : ''}`;
+        if (isAdmin) document.getElementById('openAdminPanelBtn').classList.remove('hidden');
+        loadProducts();
+        startBannerSlider();
+        loadChatMessages();
+        loadAdsBar();
+        return true;
+    }
+    return false;
+}
+
+document.getElementById('doLoginBtn').onclick = async () => {
+    const phone = document.getElementById('loginPhone').value.trim();
+    const password = document.getElementById('loginPassword').value.trim();
+    if (!phone || !password) { alert('⚠️ من فضلك أدخل رقم الموبايل وكلمة السر'); return; }
+    const btn = document.getElementById('doLoginBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ جارٍ التحقق...';
+    try {
+        const ok = await loginUser(phone, password);
+        if (!ok) {
+            alert('❌ رقم الموبايل أو كلمة السر غير صحيحة\nتأكد من البيانات وحاول مرة ثانية');
         }
+    } catch(e) {
+        alert('❌ خطأ في الاتصال بالسيرفر. تحقق من الإنترنت وحاول مرة ثانية.');
+    }
+    btn.disabled = false;
+    btn.textContent = '🚪 دخول';
+};
 
-        let currentUserPhone = null, currentUserData = null, isAdmin = false;
-        const ADMIN_NUMBER = "01022495795";
+// ==================== شريط الإعلانات ====================
+function loadAdsBar() {
+    db.ref('ads').on('value', snap => {
+        const ads = [];
+        snap.forEach(c => ads.push(c.val()));
+        const el = document.getElementById('adsSlider');
+        if (!el) return;
+        if (!ads.length) {
+            el.innerHTML = '<span class="mx-4">🔥 مملكة التجار | أضف منتجك الآن وتواصل مع آلاف التجار 🔥</span>';
+        } else {
+            el.innerHTML = ads.map(a => `<span class="mx-8">${a.text || '🔥 عرض خاص'}</span>`).join('');
+        }
+    });
+}
 
-        // ====================== التنقل بالإنتر ======================
-        function setupEnterNavigation() {
-            const forms = [
-                { inputs: ['loginPhone', 'loginPassword'], submitBtn: 'doLoginBtn' },
-                { inputs: ['reqName', 'reqPhone', 'reqStore', 'reqClientWord'], submitBtn: 'submitRequestBtn' },
-                { inputs: ['profileStoreName', 'profileAddress', 'profileWhatsapp', 'profileWhatsapp2', 'profilePhone'], submitBtn: 'saveProfileBtn' },
-                { inputs: ['prodName', 'prodDesc', 'prodPrice'], submitBtn: 'submitProductBtn' },
-                { inputs: ['adminName', 'adminPhone', 'adminStore', 'adminPassword'], submitBtn: 'addUserBtn' }
-            ];
-            
-            forms.forEach(form => {
-                form.inputs.forEach((inputId, idx) => {
-                    const input = document.getElementById(inputId);
-                    if(input) {
-                        input.addEventListener('keypress', (e) => {
-                            if(e.key === 'Enter') {
-                                e.preventDefault();
-                                const nextInput = form.inputs[idx + 1];
-                                if(nextInput) {
-                                    document.getElementById(nextInput)?.focus();
-                                } else {
-                                    document.getElementById(form.submitBtn)?.click();
-                                }
-                            }
-                        });
-                    }
-                });
-            });
-            
-            // للشات
-            const chatInput = document.getElementById('chatInput');
-            if(chatInput) {
-                chatInput.addEventListener('keypress', (e) => {
-                    if(e.key === 'Enter') {
-                        e.preventDefault();
-                        document.getElementById('sendChatBtn')?.click();
-                    }
-                });
+// ==================== التبويبات ====================
+function switchTab(tab) {
+    ['products', 'ads', 'donations', 'chat'].forEach(t => {
+        document.getElementById(t + 'Section').classList.add('hidden');
+        document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.remove('active');
+    });
+    document.getElementById(tab + 'Section').classList.remove('hidden');
+    document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+    if (tab === 'ads') startAdsSlideshow();
+    if (tab === 'chat') loadChatMessages();
+    if (tab === 'donations') loadDonationCases();
+}
+
+document.getElementById('tabProducts').onclick = () => switchTab('products');
+document.getElementById('tabAds').onclick = () => switchTab('ads');
+document.getElementById('tabDonations').onclick = () => switchTab('donations');
+document.getElementById('tabChat').onclick = () => switchTab('chat');
+
+// ==================== شاشة الإعلانات مع الذكاء الاصطناعي ====================
+function getActiveAdProducts() {
+    const now = Date.now();
+    return allProducts.filter(p => (now - p.timestamp) < AD_DURATION_MS);
+}
+
+async function getAIPromoText(product) {
+    try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 80,
+                messages: [{
+                    role: 'user',
+                    content: `اكتب جملتين ترويجيتين قصيرتين وجذابتين بالعربية لمنتج اسمه "${product.name}"${product.price && product.price !== 'غير محدد' ? ' سعره ' + product.price : ''}${product.storeName ? ' من ' + product.storeName : ''}. الجملتان فقط بدون مقدمة.`
+                }]
+            })
+        });
+        const data = await res.json();
+        return data.content?.[0]?.text?.trim() || getFallbackPromo(product);
+    } catch (e) {
+        return getFallbackPromo(product);
+    }
+}
+
+function getFallbackPromo(p) {
+    const texts = [
+        `🔥 ${p.name} — جودة لا مثيل لها بسعر لا يُقاوَم! لا تفوّت الفرصة.`,
+        `✨ ${p.name} الآن متاح من ${p.storeName || 'متجرنا'} — تواصل معنا واحصل على أفضل عرض!`,
+        `⚡ عرض خاص على ${p.name}! تواصل الآن مع التاجر وتمتع بأفضل سعر في السوق.`
+    ];
+    return texts[Math.floor(Math.random() * texts.length)];
+}
+
+let promoCache = {};
+
+async function showAdSlide(index) {
+    const products = getActiveAdProducts();
+    if (!products.length) {
+        document.getElementById('adSlideInner').innerHTML = `
+            <div style="color:rgba(255,255,255,0.4);text-align:center;padding:40px 0">
+                <div style="font-size:60px;margin-bottom:16px">📦</div>
+                <p style="font-size:18px">لا توجد منتجات في الإعلانات حالياً</p>
+                <p style="font-size:13px;margin-top:8px;color:rgba(255,255,255,0.25)">أضف منتجات وستظهر هنا لمدة 48 ساعة</p>
+            </div>`;
+        document.getElementById('adCounterBadge').textContent = '0 / 0';
+        document.getElementById('adExpireInfo').textContent = '';
+        return;
+    }
+
+    adIndex = ((index % products.length) + products.length) % products.length;
+    const prod = products[adIndex];
+    const now = Date.now();
+    const remaining = Math.max(0, Math.round((prod.timestamp + AD_DURATION_MS - now) / 3600000));
+    const isExpiringSoon = remaining <= 3;
+
+    document.getElementById('adCounterBadge').textContent = `${adIndex + 1} / ${products.length}`;
+    document.getElementById('adExpireBadge').style.display = isExpiringSoon ? 'block' : 'none';
+    document.getElementById('adExpireInfo').textContent = `⏰ متبقي ${remaining} ساعة`;
+
+    // الصورة
+    const imgArea = document.getElementById('adImageArea');
+    if (prod.imageUrl) {
+        imgArea.innerHTML = `<img src="${prod.imageUrl}" class="ad-product-img" alt="${prod.name}">`;
+    } else {
+        imgArea.innerHTML = `<div class="ad-emoji-placeholder">🛒</div>`;
+    }
+
+    document.getElementById('adProductName').textContent = prod.name || '';
+    document.getElementById('adProductPrice').textContent = prod.price && prod.price !== 'غير محدد' ? `💰 ${prod.price}` : '';
+    document.getElementById('adStoreName').textContent = prod.storeName ? `🏪 ${prod.storeName}${prod.storeAddress ? ' — ' + prod.storeAddress : ''}` : '';
+    document.getElementById('adWhatsappBtn').href = prod.whatsapp ? `https://wa.me/${prod.whatsapp.replace(/[^0-9]/g, '')}` : '#';
+
+    // النص الترويجي بالذكاء الاصطناعي
+    const promoEl = document.getElementById('adPromoText');
+    if (promoCache[prod.id]) {
+        promoEl.textContent = promoCache[prod.id];
+    } else {
+        promoEl.innerHTML = '<span class="ad-loading-promo">🤖 جارٍ توليد النص الترويجي...</span>';
+        getAIPromoText(prod).then(text => {
+            promoCache[prod.id] = text;
+            if (document.getElementById('adPromoText')) {
+                document.getElementById('adPromoText').textContent = text;
             }
-        }
+        });
+    }
 
-        // ====================== إنشاء حساب المدير ======================
-        async function setupAdminIfNotExists() {
-            try {
-                const snapshot = await db.ref(`users/${ADMIN_NUMBER}`).once('value');
-                if(!snapshot.exists()) {
-                    await db.ref(`users/${ADMIN_NUMBER}`).set({
-                        name: "المدير العام", storeName: "مملكة التجار", password: "010224",
-                        clientWord: "admin@123", active: true, isAdmin: true, createdAt: Date.now()
-                    });
-                    console.log("✅ تم إنشاء حساب المدير");
-                }
-            } catch(e) { console.log(e); }
-        }
-        setupAdminIfNotExists();
+    // انيميشن الشريحة
+    const inner = document.getElementById('adSlideInner');
+    inner.style.animation = 'none';
+    inner.offsetHeight;
+    inner.style.animation = 'adFadeIn 0.7s ease';
 
-        // ====================== تسجيل الدخول ======================
-        async function loginUser(phone, password) {
-            try {
-                const snapshot = await db.ref(`users/${phone}`).once('value');
-                const user = snapshot.val();
-                if(user && user.password === password && user.active === true) {
-                    currentUserPhone = phone; currentUserData = user; isAdmin = (phone === ADMIN_NUMBER);
-                    localStorage.setItem('loggedInPhone', phone);
-                    document.getElementById('loginScreen').classList.add('hidden');
-                    document.getElementById('appScreen').classList.remove('hidden');
-                    document.getElementById('welcomeMsg').innerHTML = `مرحباً ${user.name || 'تاجر'} ${isAdmin ? '👑' : ''}`;
-                    if(isAdmin) document.getElementById('openAdminPanelBtn').classList.remove('hidden');
-                    else document.getElementById('openAdminPanelBtn').classList.add('hidden');
-                    loadProducts(); startBannerSlider(); loadChatMessages(); loadAdsBar();
-                    return true;
-                }
-                return false;
-            } catch(e) { return false; }
-        }
+    // شريط التقدم
+    resetProgressBar();
+}
 
-        document.getElementById('doLoginBtn').onclick = async () => {
-            const phone = document.getElementById('loginPhone').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-            if(phone && password) {
-                const success = await loginUser(phone, password);
-                if(!success) alert('❌ رقم أو كلمة سر غير صحيحة');
-            } else alert('من فضلك أدخل الرقم وكلمة السر');
+function resetProgressBar() {
+    const fill = document.getElementById('adProgressFill');
+    if (!fill) return;
+    fill.style.transition = 'none';
+    fill.style.width = '100%';
+    fill.offsetHeight;
+    fill.style.transition = `width ${AD_SLIDE_SECONDS}s linear`;
+    fill.style.width = '0%';
+}
+
+function startAdsSlideshow() {
+    if (adTimer) clearInterval(adTimer);
+    adPaused = false;
+    document.getElementById('adPauseBtn').textContent = '⏸ إيقاف';
+    const products = getActiveAdProducts();
+    if (!products.length && allProducts.length) {
+        // إظهار رسالة انتهاء المدة
+    }
+    showAdSlide(0);
+    adTimer = setInterval(() => {
+        if (!adPaused) {
+            adIndex = (adIndex + 1) % Math.max(1, getActiveAdProducts().length);
+            showAdSlide(adIndex);
+        }
+    }, AD_SLIDE_SECONDS * 1000);
+}
+
+function nextAd() { showAdSlide(adIndex + 1); }
+function prevAd() { showAdSlide(adIndex - 1); }
+function toggleAdPause() {
+    adPaused = !adPaused;
+    const btn = document.getElementById('adPauseBtn');
+    if (adPaused) {
+        btn.textContent = '▶ تشغيل';
+        const fill = document.getElementById('adProgressFill');
+        if (fill) fill.style.transition = 'none';
+    } else {
+        btn.textContent = '⏸ إيقاف';
+        resetProgressBar();
+    }
+}
+
+// ==================== المنتجات ====================
+let selectedImageFile = null;
+
+document.getElementById('prodImage').onchange = e => {
+    if (e.target.files[0]) {
+        selectedImageFile = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = ev => {
+            document.getElementById('imagePreview').classList.remove('hidden');
+            document.getElementById('previewImg').src = ev.target.result;
         };
+        reader.readAsDataURL(selectedImageFile);
+    }
+};
 
-        // ====================== شريط الإعلانات ======================
-        function loadAdsBar() {
-            db.ref('ads').on('value', (snapshot) => {
-                const ads = []; snapshot.forEach(child => ads.push(child.val()));
-                const container = document.getElementById('adsSlider');
-                if(!container) return;
-                if(ads.length === 0) container.innerHTML = '<span class="mx-4">🔥 عروض حصرية لمملكة التجار | أضف منتجك الآن وتواصل مع آلاف التجار 🔥</span>';
-                else {
-                    let html = '';
-                    ads.forEach(ad => { html += `<span class="mx-8">${ad.text || '🔥 عرض خاص'}</span>`; });
-                    container.innerHTML = html;
-                }
-            });
-        }
+document.getElementById('aiGenerateBtn').onclick = async () => {
+    const name = document.getElementById('prodName').value.trim();
+    if (!name) { alert('اكتب اسم المنتج أولاً'); return; }
+    const statusEl = document.getElementById('aiGenerateStatus');
+    statusEl.textContent = '⏳ جارٍ التوليد...';
+    document.getElementById('aiGenerateBtn').disabled = true;
+    try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 100,
+                messages: [{ role: 'user', content: `اكتب وصفاً تسويقياً قصيراً وجذاباً بالعربية (جملتين فقط) لمنتج اسمه "${name}". بدون أي مقدمة.` }]
+            })
+        });
+        const data = await res.json();
+        document.getElementById('prodDesc').value = data.content?.[0]?.text?.trim() || `🔥 ${name} — جودة عالية وسعر ممتاز!`;
+        statusEl.textContent = '✅ تم التوليد';
+    } catch (e) {
+        document.getElementById('prodDesc').value = `🔥 ${name} — جودة عالية وسعر ممتاز! تواصل معنا الآن.`;
+        statusEl.textContent = '✅ تم';
+    }
+    document.getElementById('aiGenerateBtn').disabled = false;
+};
 
-        // ====================== الشات ======================
-        async function sendChatMessage(text, imageFile = null, audioBlob = null) {
-            if(!text && !imageFile && !audioBlob) return;
-            let imageUrl = null;
-            const msgId = Date.now().toString() + Math.random().toString(36).substring(2, 6);
-            const messagesContainer = document.getElementById('chatMessages');
-            const tempDiv = document.createElement('div');
-            tempDiv.id = `temp-${msgId}`;
-            tempDiv.className = 'flex justify-end';
-            tempDiv.innerHTML = `<div class="message-bubble message-sent p-3 shadow-sm opacity-70"><p>${text || '⏳ جاري الإرسال...'}</p><p class="text-[10px] text-gray-400">⌛</p></div>`;
-            messagesContainer.appendChild(tempDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            try {
-                if(imageFile) imageUrl = await uploadImageToCloudinary(imageFile);
-                if(audioBlob) { const reader = new FileReader(); imageUrl = await new Promise((resolve) => { reader.onloadend = () => resolve(reader.result); reader.readAsDataURL(audioBlob); }); }
-                const messageData = { text: text || '', imageUrl: imageUrl, senderPhone: currentUserPhone, senderName: currentUserData?.name || 'تاجر', timestamp: Date.now(), status: 'sent' };
-                const newRef = await db.ref('chatMessages').push(messageData);
-                await db.ref(`chatMessages/${newRef.key}/status`).set('delivered');
-                await db.ref(`chatMessages/${newRef.key}/id`).set(newRef.key);
-                document.getElementById(`temp-${msgId}`)?.remove();
-            } catch(e) { document.getElementById(`temp-${msgId}`)?.remove(); alert('❌ فشل إرسال الرسالة'); }
+async function addProductToDB(product, imageFile) {
+    const newRef = db.ref('products').push();
+    product.id = newRef.key;
+    product.userPhone = currentUserPhone;
+    product.timestamp = Date.now();
+    const profileSnap = await db.ref(`profiles/${currentUserPhone}`).once('value');
+    const profile = profileSnap.val() || {};
+    product.storeName = profile.storeName || currentUserData?.storeName || currentUserData?.name || 'متجر';
+    product.storeAddress = profile.address || '';
+    product.whatsapp = profile.whatsapp || '';
+    if (imageFile) {
+        try { product.imageUrl = await uploadImageToCloudinary(imageFile); } catch (e) { console.error(e); }
+    }
+    await newRef.set(product);
+}
+
+document.getElementById('submitProductBtn').onclick = async () => {
+    const name = document.getElementById('prodName').value.trim();
+    if (!name) { alert('❌ اسم المنتج مطلوب'); return; }
+    const btn = document.getElementById('submitProductBtn');
+    btn.disabled = true; btn.textContent = '⏳ جارٍ النشر...';
+    try {
+        await addProductToDB({
+            name,
+            desc: document.getElementById('prodDesc').value.trim(),
+            price: document.getElementById('prodPrice').value.trim() || 'غير محدد'
+        }, selectedImageFile);
+        document.getElementById('productModal').classList.add('hidden');
+        ['prodName', 'prodDesc', 'prodPrice'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('prodImage').value = '';
+        document.getElementById('imagePreview').classList.add('hidden');
+        selectedImageFile = null;
+        promoCache = {};
+        alert('✅ تم إضافة المنتج بنجاح! سيظهر في الإعلانات لمدة 48 ساعة');
+        loadProducts();
+    } catch (e) { alert('❌ حدث خطأ: ' + e.message); }
+    btn.disabled = false; btn.textContent = '📤 نشر المنتج';
+};
+
+function loadProducts() {
+    db.ref('products').orderByChild('timestamp').limitToLast(50).on('value', snap => {
+        allProducts = [];
+        snap.forEach(c => allProducts.unshift(c.val()));
+        renderProducts(allProducts);
+        updateBanner(allProducts);
+    });
+}
+
+function filterProducts() {
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    if (!q) { renderProducts(allProducts); return; }
+    const filtered = allProducts.filter(p =>
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.storeName || '').toLowerCase().includes(q) ||
+        (p.desc || '').toLowerCase().includes(q) ||
+        (p.storeAddress || '').toLowerCase().includes(q)
+    );
+    renderProducts(filtered);
+}
+
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    renderProducts(allProducts);
+}
+
+document.getElementById('searchInput').addEventListener('keyup', e => {
+    if (e.key === 'Enter') filterProducts();
+});
+
+function renderProducts(products) {
+    const container = document.getElementById('productsGrid');
+    if (!container) return;
+    if (!products.length) {
+        container.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">✨ لا توجد منتجات ✨</div>';
+        return;
+    }
+    const now = Date.now();
+    container.innerHTML = products.map(prod => {
+        const isOwner = prod.userPhone === currentUserPhone || isAdmin;
+        const isActive = (now - prod.timestamp) < AD_DURATION_MS;
+        const remainH = Math.max(0, Math.round((prod.timestamp + AD_DURATION_MS - now) / 3600000));
+        return `
+        <div class="bg-white rounded-2xl shadow-md p-4 product-card relative">
+            ${prod.imageUrl
+                ? `<img src="${prod.imageUrl}" class="w-full h-40 object-cover rounded-xl mb-3">`
+                : '<div class="text-5xl mb-2 text-center py-4">🛒</div>'}
+            ${isActive
+                ? `<span class="absolute top-2 right-2 bg-green-500 text-white text-[10px] px-2 py-0.5 rounded-full">📺 في الإعلانات</span>`
+                : `<span class="absolute top-2 right-2 bg-gray-400 text-white text-[10px] px-2 py-0.5 rounded-full">انتهى الإعلان</span>`}
+            <h3 class="font-bold text-lg">${prod.name || ''}</h3>
+            <p class="text-gray-600 text-sm line-clamp-2 mb-1">${prod.desc || ''}</p>
+            <p class="text-green-700 font-bold">💰 ${prod.price || 'غير محدد'}</p>
+            <p class="text-gray-500 text-sm">🏪 ${prod.storeName || 'متجر'}</p>
+            ${prod.storeAddress ? `<p class="text-gray-400 text-xs">📍 ${prod.storeAddress}</p>` : ''}
+            ${isActive ? `<p class="text-blue-400 text-xs mt-1">⏰ متبقي ${remainH} ساعة في الإعلانات</p>` : ''}
+            ${prod.whatsapp
+                ? `<a href="https://wa.me/${prod.whatsapp.replace(/[^0-9]/g,'')}" target="_blank" class="mt-3 bg-green-500 text-white px-4 py-2 rounded-full text-sm w-full block text-center hover:bg-green-600">📲 واتساب</a>`
+                : ''}
+            ${isOwner ? `<button onclick="openEditModal('${prod.id}','${(prod.name||'').replace(/'/g,"\\'")}','${(prod.desc||'').replace(/'/g,"\\'")}','${(prod.price||'').replace(/'/g,"\\'")}','${prod.imageUrl||''}')" class="absolute bottom-3 left-3 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs hover:bg-yellow-600">✏️ تعديل</button>` : ''}
+        </div>`;
+    }).join('');
+}
+
+// ==================== البانر ====================
+function updateBanner(products) {
+    bannerProducts = products.slice(0, 5);
+    if (bannerProducts.length) showBanner(0);
+}
+function showBanner(idx) {
+    const prod = bannerProducts[idx];
+    if (!prod) return;
+    document.getElementById('bannerName').textContent = prod.name || '';
+    document.getElementById('bannerStore').textContent = prod.storeName || '';
+    document.getElementById('bannerPrice').textContent = prod.price && prod.price !== 'غير محدد' ? '💰 ' + prod.price : '';
+    if (prod.imageUrl) { document.getElementById('bannerImage').src = prod.imageUrl; document.getElementById('bannerImage').classList.remove('hidden'); }
+    else document.getElementById('bannerImage').classList.add('hidden');
+    document.getElementById('bannerWhatsapp').href = prod.whatsapp ? `https://wa.me/${prod.whatsapp.replace(/[^0-9]/g, '')}` : '#';
+}
+function startBannerSlider() {
+    if (bannerInterval) clearInterval(bannerInterval);
+    bannerInterval = setInterval(() => {
+        if (bannerProducts.length) { bannerIndex = (bannerIndex + 1) % bannerProducts.length; showBanner(bannerIndex); }
+    }, 7000);
+}
+
+// ==================== تعديل المنتج ====================
+function openEditModal(id, name, desc, price, imageUrl) {
+    window.currentEditProduct = { id, name, desc, price };
+    document.getElementById('editProductId').value = id;
+    document.getElementById('editName').value = name;
+    document.getElementById('editDesc').value = desc;
+    document.getElementById('editPrice').value = price;
+    const em = document.getElementById('editProductModal');
+    em.classList.remove('hidden');
+    em.classList.add('flex');
+}
+window.openEditModal = openEditModal;
+
+document.getElementById('updateProductBtn').onclick = async () => {
+    if (!window.currentEditProduct) return;
+    await db.ref(`products/${window.currentEditProduct.id}`).update({
+        name: document.getElementById('editName').value,
+        desc: document.getElementById('editDesc').value,
+        price: document.getElementById('editPrice').value
+    });
+    promoCache = {};
+    alert('✅ تم التحديث');
+    const editM = document.getElementById('editProductModal');
+    editM.classList.add('hidden');
+    editM.classList.remove('flex');
+    loadProducts();
+};
+document.getElementById('deleteProductBtn').onclick = async () => {
+    if (!window.currentEditProduct || !confirm('حذف المنتج؟')) return;
+    await db.ref(`products/${window.currentEditProduct.id}`).remove();
+    promoCache = {};
+    alert('✅ تم الحذف');
+    const editM2 = document.getElementById('editProductModal');
+    editM2.classList.add('hidden');
+    editM2.classList.remove('flex');
+    loadProducts();
+};
+
+// ==================== الملف الشخصي ====================
+async function loadProfile() {
+    const snap = await db.ref(`profiles/${currentUserPhone}`).once('value');
+    const p = snap.val() || {};
+    document.getElementById('profileStoreName').value = p.storeName || '';
+    document.getElementById('profileAddress').value = p.address || '';
+    document.getElementById('profileWhatsapp').value = p.whatsapp || '';
+    document.getElementById('profileWhatsapp2').value = p.whatsapp2 || '';
+    document.getElementById('profilePhone').value = p.phone || '';
+}
+document.getElementById('openProfileBtn').onclick = () => {
+    loadProfile();
+    const m = document.getElementById('profileModal');
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+};
+document.getElementById('saveProfileBtn').onclick = async () => {
+    await db.ref(`profiles/${currentUserPhone}`).set({
+        storeName: document.getElementById('profileStoreName').value,
+        address: document.getElementById('profileAddress').value,
+        whatsapp: document.getElementById('profileWhatsapp').value,
+        whatsapp2: document.getElementById('profileWhatsapp2').value,
+        phone: document.getElementById('profilePhone').value,
+        updatedAt: Date.now()
+    });
+    alert('✅ تم حفظ بيانات متجرك');
+    const pm = document.getElementById('profileModal');
+    pm.classList.add('hidden');
+    pm.classList.remove('flex');
+};
+
+// ==================== الشات ====================
+async function sendChatMessage(text, imageFile = null, audioBlob = null) {
+    if (!text && !imageFile && !audioBlob) return;
+    let imageUrl = null;
+    try {
+        if (imageFile) imageUrl = await uploadImageToCloudinary(imageFile);
+        if (audioBlob) { imageUrl = await new Promise(res => { const r = new FileReader(); r.onloadend = () => res(r.result); r.readAsDataURL(audioBlob); }); }
+        const msgData = { text: text || '', imageUrl, senderPhone: currentUserPhone, senderName: currentUserData?.name || 'تاجر', timestamp: Date.now(), status: 'sent' };
+        const ref = await db.ref('chatMessages').push(msgData);
+        await db.ref(`chatMessages/${ref.key}/status`).set('delivered');
+    } catch (e) { alert('❌ فشل إرسال الرسالة'); }
+}
+
+function renderChatMessages(messages) {
+    const container = document.getElementById('chatMessages');
+    if (!container) return;
+    if (!messages.length) { container.innerHTML = '<div class="text-center text-gray-400 py-10">✨ لا توجد رسائل بعد ✨</div>'; return; }
+    container.innerHTML = messages.map(msg => {
+        const isMe = msg.senderPhone === currentUserPhone;
+        const statusIcon = isMe ? (msg.status === 'delivered' ? '✔️✔️' : '✔️') : '';
+        return `
+        <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+            <div class="message-bubble ${isMe ? 'message-sent' : 'message-received'} p-3 shadow-sm">
+                <p class="text-xs font-bold text-green-700 mb-1">${isMe ? 'أنا' : (msg.senderName || 'تاجر')}</p>
+                ${msg.imageUrl ? (msg.imageUrl.startsWith('data:audio') ? `<audio controls src="${msg.imageUrl}" class="w-48"></audio>` : `<img src="${msg.imageUrl}" class="max-w-[200px] rounded-xl mb-2 cursor-pointer" onclick="window.open('${msg.imageUrl}')">`) : ''}
+                ${msg.text ? `<p>${msg.text}</p>` : ''}
+                <p class="text-[10px] text-gray-400 text-left mt-1">${new Date(msg.timestamp).toLocaleTimeString('ar')} ${statusIcon}</p>
+            </div>
+        </div>`;
+    }).join('');
+    container.scrollTop = container.scrollHeight;
+}
+
+function loadChatMessages() {
+    db.ref('chatMessages').orderByChild('timestamp').limitToLast(50).on('value', snap => {
+        const msgs = [];
+        snap.forEach(c => msgs.push(c.val()));
+        renderChatMessages(msgs);
+    });
+}
+
+document.getElementById('sendChatBtn').onclick = async () => {
+    const input = document.getElementById('chatInput');
+    if (input.value.trim()) { await sendChatMessage(input.value.trim()); input.value = ''; }
+};
+document.getElementById('chatInput').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('sendChatBtn').click(); });
+document.getElementById('attachImageBtn').onclick = () => {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = async e => { if (e.target.files[0]) await sendChatMessage('', e.target.files[0]); };
+    inp.click();
+};
+document.getElementById('emojiBtn').onclick = () => { const i = document.getElementById('chatInput'); i.value += ' 😊👍❤️🔥🎉'; i.focus(); };
+
+let mediaRecorder, audioChunks = [], isRecording = false;
+document.getElementById('voiceRecordBtn').onclick = async () => {
+    if (isRecording) {
+        mediaRecorder?.stop();
+        document.getElementById('voiceRecordBtn').classList.remove('recording');
+        isRecording = false;
+    } else {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                await sendChatMessage('', null, blob);
+                stream.getTracks().forEach(t => t.stop());
+            };
+            mediaRecorder.start();
+            isRecording = true;
+            document.getElementById('voiceRecordBtn').classList.add('recording');
+            setTimeout(() => { if (isRecording) mediaRecorder.stop(); }, 30000);
+        } catch (e) { alert('مشكلة في المايك'); }
+    }
+};
+
+// ==================== لوحة التحكم ====================
+async function loadUsersList() {
+    const snap = await db.ref('users').once('value');
+    const users = snap.val() || {};
+    const container = document.getElementById('usersList');
+    if (!Object.keys(users).length) { container.innerHTML = '<div class="text-gray-500 text-center py-4">📭 لا يوجد تجار</div>'; return; }
+    container.innerHTML = Object.entries(users).map(([phone, u]) => `
+        <div class="flex justify-between items-center bg-white p-3 rounded-xl border mb-2">
+            <div>
+                <p class="font-bold">${u.name || 'بدون اسم'}</p>
+                <p class="text-sm text-gray-600">📱 ${phone} | 🏪 ${u.storeName || '-'}</p>
+                <p class="text-xs text-green-600">🔑 ${u.password || '-'}</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="adminResetPassword('${phone}')" class="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm">🔄</button>
+                <button onclick="adminDeleteUser('${phone}')" class="bg-red-500 text-white px-3 py-1 rounded-full text-sm">🗑</button>
+            </div>
+        </div>`).join('');
+}
+
+async function loadRequestsList() {
+    const snap = await db.ref('requests').once('value');
+    const requests = snap.val() || {};
+    const container = document.getElementById('requestsList');
+    if (!Object.keys(requests).length) { container.innerHTML = '<div class="text-gray-500 text-center py-4">📭 لا توجد طلبات</div>'; return; }
+    container.innerHTML = Object.entries(requests).map(([id, r]) => `
+        <div class="flex justify-between items-center bg-white p-3 rounded-xl border mb-2">
+            <div>
+                <p class="font-bold">${r.name || '-'}</p>
+                <p class="text-sm text-gray-600">📱 ${r.phone || '-'} | 🏪 ${r.store || '-'}</p>
+                <p class="text-xs text-gray-400">${r.timestamp ? new Date(r.timestamp).toLocaleString('ar') : ''}</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="adminAcceptRequest('${id}','${r.phone}','${(r.name||'').replace(/'/g,"\\'")}','${(r.store||'').replace(/'/g,"\\'")}')}" class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">✅</button>
+                <button onclick="adminDeleteRequest('${id}')" class="bg-gray-400 text-white px-3 py-1 rounded-full text-sm">❌</button>
+            </div>
+        </div>`).join('');
+}
+
+window.adminDeleteUser = async phone => { if (confirm('حذف التاجر؟')) { await db.ref(`users/${phone}`).remove(); loadUsersList(); } };
+window.adminResetPassword = async phone => { const pw = prompt('كلمة السر الجديدة', 'mkt123'); if (pw && pw.length >= 4) { await db.ref(`users/${phone}/password`).set(pw); alert('✅ تم التغيير'); loadUsersList(); } };
+window.adminAcceptRequest = async (id, phone, name, store) => {
+    const pw = Math.random().toString(36).substring(2, 8);
+    await db.ref(`users/${phone}`).set({ name, storeName: store || 'متجر', password: pw, active: true, createdAt: Date.now() });
+    await db.ref(`requests/${id}`).remove();
+    alert(`✅ تم التفعيل\nالرقم: ${phone}\nكلمة السر: ${pw}`);
+    loadUsersList(); loadRequestsList();
+};
+window.adminDeleteRequest = async id => { if (confirm('حذف الطلب؟')) { await db.ref(`requests/${id}`).remove(); loadRequestsList(); } };
+
+document.getElementById('addUserBtn').onclick = async () => {
+    const name = document.getElementById('adminName').value.trim();
+    const phone = document.getElementById('adminPhone').value.trim();
+    const store = document.getElementById('adminStore').value.trim();
+    const pw = document.getElementById('adminPassword').value.trim();
+    if (!name || !phone) { alert('الاسم والرقم مطلوبين'); return; }
+    await db.ref(`users/${phone}`).set({ name, storeName: store || 'متجر', password: pw || 'mkt123', active: true, createdAt: Date.now() });
+    alert('✅ تم إضافة التاجر');
+    loadUsersList();
+};
+
+// ==================== أحداث الإغلاق ====================
+document.getElementById('openAdminPanelBtn').onclick = () => {
+    if (!isAdmin) { alert('للمدير فقط'); return; }
+    loadUsersList(); loadRequestsList();
+    document.getElementById('adminPanel').classList.remove('hidden');
+};
+document.getElementById('openAddProductBtn').onclick = () => {
+    const m = document.getElementById('productModal');
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+};
+document.getElementById('closeProductModal').onclick = () => {
+    const m = document.getElementById('productModal');
+    m.classList.add('hidden');
+    m.classList.remove('flex');
+};
+document.getElementById('closeProfileModal').onclick = () => {
+    const m = document.getElementById('profileModal');
+    m.classList.add('hidden');
+    m.classList.remove('flex');
+};
+document.getElementById('closeEditModal').onclick = () => {
+    const m = document.getElementById('editProductModal');
+    m.classList.add('hidden');
+    m.classList.remove('flex');
+};
+document.getElementById('closeAdminPanel').onclick = () => {
+    document.getElementById('adminPanel').classList.add('hidden');
+};
+document.getElementById('closeRequestModal').onclick = () => {
+    const m = document.getElementById('requestModal');
+    m.classList.add('hidden');
+    m.classList.remove('flex');
+};
+document.getElementById('openRequestBtn').onclick = () => {
+    const m = document.getElementById('requestModal');
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+};
+document.getElementById('refreshProducts').onclick = () => loadProducts();
+document.getElementById('logoutMainBtn').onclick = () => {
+    if (adTimer) clearInterval(adTimer);
+    localStorage.removeItem('loggedInPhone');
+    location.reload();
+};
+document.getElementById('submitRequestBtn').onclick = async () => {
+    const name = document.getElementById('reqName').value.trim();
+    const phone = document.getElementById('reqPhone').value.trim();
+    let store = document.getElementById('reqStore').value.trim() || name;
+    const cw = document.getElementById('reqClientWord').value.trim();
+    if (!name || !phone) { alert('❌ الاسم ورقم الهاتف مطلوبين'); return; }
+    await db.ref('requests').push({ name, phone, store, clientWord: cw || 'غير محدد', status: 'pending', timestamp: Date.now() });
+    alert('✅ تم إرسال طلبك! سيتم التواصل معك قريباً');
+    const reqM = document.getElementById('requestModal');
+    reqM.classList.add('hidden');
+    reqM.classList.remove('flex');
+    ['reqName','reqPhone','reqStore','reqClientWord'].forEach(id => document.getElementById(id).value = '');
+};
+
+// ==================== استئناف الجلسة ====================
+loadProducts(); startBannerSlider(); loadAdsBar();
+const savedPhone = localStorage.getItem('loggedInPhone');
+if (savedPhone) {
+    db.ref(`users/${savedPhone}`).once('value').then(snap => {
+        if (snap.val()) {
+            currentUserPhone = savedPhone;
+            currentUserData = snap.val();
+            isAdmin = (savedPhone === ADMIN_NUMBER);
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appScreen').classList.remove('hidden');
+            document.getElementById('welcomeMsg').innerHTML = `مرحباً ${currentUserData.name || 'تاجر'} ${isAdmin ? '👑' : ''}`;
+            if (isAdmin) document.getElementById('openAdminPanelBtn').classList.remove('hidden');
+            loadProducts(); loadChatMessages(); loadAdsBar();
         }
-        
-        function renderChatMessages(messages) {
-            const container = document.getElementById('chatMessages');
-            if(!container) return;
-            if(messages.length === 0) { container.innerHTML = '<div class="text-center text-gray-400 py-10">✨ لا توجد رسائل بعد ✨</div>'; return; }
-            container.innerHTML = messages.map(msg => {
-                const isMe = (msg.senderPhone === currentUserPhone);
-                let statusIcon = '';
-                if(isMe) { if(msg.status === 'sent') statusIcon = '✔️'; else if(msg.status === 'delivered') statusIcon = '✔️✔️'; else statusIcon = '⏳'; }
-                return `<div class="flex ${isMe ? 'justify-end' : 'justify-start'}"><div class="message-bubble ${isMe ? 'message-sent' : 'message-received'} p-3 shadow-sm"><p class="text-xs font-bold text-green-700 mb-1">${isMe ? 'أنا' : (msg.senderName || 'تاجر')}</p>${msg.imageUrl ? (msg.imageUrl.startsWith('data:') ? `<audio controls src="${msg.imageUrl}" class="w-48"></audio>` : `<img src="${msg.imageUrl}" class="max-w-[200px] rounded-xl mb-2 cursor-pointer" onclick="window.open('${msg.imageUrl}')">`) : ''}${msg.text ? `<p>${msg.text}</p>` : ''}<p class="text-[10px] text-gray-400 text-left mt-1">${new Date(msg.timestamp).toLocaleTimeString('ar')} ${statusIcon}</p></div></div>`;
-            }).join('');
-            container.scrollTop = container.scrollHeight;
-        }
-        
-        function loadChatMessages() { db.ref('chatMessages').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => { const messages = []; snapshot.forEach(child => messages.push(child.val())); renderChatMessages(messages); }); }
-        
-        document.getElementById('sendChatBtn').onclick = async () => { const input = document.getElementById('chatInput'); if(input.value.trim()) { await sendChatMessage(input.value.trim()); input.value = ''; } };
-        document.getElementById('attachImageBtn').onclick = () => { let input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.onchange = async (e) => { if(e.target.files[0]) { await sendChatMessage('', e.target.files[0]); } }; input.click(); };
-        
-        let mediaRecorder, audioChunks, isRecording = false;
-        document.getElementById('voiceRecordBtn').onclick = async () => {
-            if(isRecording) { mediaRecorder?.stop(); document.getElementById('voiceRecordBtn').classList.remove('recording'); isRecording = false; }
-            else { try { const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); mediaRecorder = new MediaRecorder(stream); audioChunks = []; mediaRecorder.ondataavailable = e => audioChunks.push(e.data); mediaRecorder.onstop = async () => { const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); await sendChatMessage('', null, audioBlob); stream.getTracks().forEach(track => track.stop()); }; mediaRecorder.start(); isRecording = true; document.getElementById('voiceRecordBtn').classList.add('recording'); setTimeout(() => { if(isRecording) mediaRecorder.stop(); }, 30000); } catch(e) { alert("مشكلة في المايك"); } }
+    });
+}
+
+// ==================== نظام التبرعات ====================
+let donationSelectedImage = null, donateReceiptFile = null;
+
+// رفع صورة حالة التبرع
+document.getElementById('donationCaseImage').onchange = e => {
+    if (e.target.files[0]) {
+        donationSelectedImage = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = ev => {
+            document.getElementById('donationImagePreview').classList.remove('hidden');
+            document.getElementById('donationPreviewImg').src = ev.target.result;
         };
-        document.getElementById('emojiBtn').onclick = () => { const input = document.getElementById('chatInput'); input.value += " 😊👍❤️🔥🎉"; input.focus(); };
+        reader.readAsDataURL(donationSelectedImage);
+    }
+};
 
-        // ====================== طلب تسجيل ======================
-        document.getElementById('submitRequestBtn').onclick = async () => {
-            const name = document.getElementById('reqName').value.trim();
-            const phone = document.getElementById('reqPhone').value.trim();
-            let store = document.getElementById('reqStore').value.trim();
-            const clientWord = document.getElementById('reqClientWord').value.trim();
-            if(!name || !phone) { alert('❌ الاسم ورقم الهاتف مطلوبين'); return; }
-            if(!store) store = name;
-            await db.ref('requests').push({ name, phone, store, clientWord: clientWord || 'غير محدد', status: 'pending', timestamp: Date.now() });
-            alert(`✅ تم إرسال طلبك! كلمة العميل: ${clientWord || 'غير محدد'}\nسيتم التواصل معك قريباً`);
-            document.getElementById('requestModal').classList.add('hidden');
-            document.getElementById('reqName').value = ''; document.getElementById('reqPhone').value = ''; document.getElementById('reqStore').value = ''; document.getElementById('reqClientWord').value = '';
+// رفع صورة إيصال التبرع
+document.getElementById('donateReceiptImage').onchange = e => {
+    if (e.target.files[0]) {
+        donateReceiptFile = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = ev => {
+            document.getElementById('donateReceiptPreview').classList.remove('hidden');
+            document.getElementById('donateReceiptImg').src = ev.target.result;
         };
+        reader.readAsDataURL(donateReceiptFile);
+    }
+};
 
-        // ====================== المنتجات ======================
-        let selectedImageFile = null;
-        document.getElementById('prodImage').onchange = (e) => { if(e.target.files[0]) { selectedImageFile = e.target.files[0]; const reader = new FileReader(); reader.onload = (event) => { document.getElementById('imagePreview').classList.remove('hidden'); document.getElementById('previewImg').src = event.target.result; }; reader.readAsDataURL(selectedImageFile); } };
-        document.getElementById('aiGenerateBtn').onclick = () => { const name = document.getElementById('prodName').value.trim(); if(!name) { alert('اكتب اسم المنتج أولاً'); return; } const templates = [`🔥 ${name} - جودة عالية وسعر ممتاز!`, `✨ ${name} - أحدث إصدار`, `⚡ ${name} - عروض خاصة`]; document.getElementById('prodDesc').value = templates[Math.floor(Math.random() * templates.length)]; };
-        
-        async function addProductToDB(product, imageFile) {
-            const newRef = db.ref('products').push();
-            product.id = newRef.key; product.userPhone = currentUserPhone; product.timestamp = Date.now();
-            const profileSnap = await db.ref(`profiles/${currentUserPhone}`).once('value');
-            const profile = profileSnap.val() || {};
-            product.storeName = profile.storeName || currentUserData?.storeName || currentUserData?.name || 'متجر';
-            product.storeAddress = profile.address || ''; product.whatsapp = profile.whatsapp || '';
-            if(imageFile) { try { const imageUrl = await uploadImageToCloudinary(imageFile); if(imageUrl) product.imageUrl = imageUrl; } catch(e) { console.error(e); } }
-            await newRef.set(product); return productId;
-        }
-        
-        document.getElementById('submitProductBtn').onclick = async () => {
-            const name = document.getElementById('prodName').value.trim();
-            const price = document.getElementById('prodPrice').value.trim();
-            if(!name) { alert('❌ اسم المنتج مطلوب'); return; }
-            await addProductToDB({ name, desc: document.getElementById('prodDesc').value.trim(), price: price || 'غير محدد' }, selectedImageFile);
-            document.getElementById('productModal').classList.add('hidden');
-            document.getElementById('prodName').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodPrice').value = ''; document.getElementById('prodImage').value = ''; document.getElementById('imagePreview').classList.add('hidden'); selectedImageFile = null;
-            alert('✅ تم إضافة المنتج بنجاح!'); loadProducts();
-        };
+// فتح مودال نشر حالة
+document.getElementById('openNewDonationCaseBtn').onclick = () => {
+    document.getElementById('donationCaseModal').classList.remove('hidden');
+    document.getElementById('donationCaseModal').classList.add('flex');
+};
+document.getElementById('closeDonationCaseModal').onclick = () => {
+    document.getElementById('donationCaseModal').classList.add('hidden');
+    document.getElementById('donationCaseModal').classList.remove('flex');
+};
+document.getElementById('closeDonateModal').onclick = () => {
+    document.getElementById('donateModal').classList.add('hidden');
+    document.getElementById('donateModal').classList.remove('flex');
+};
+document.getElementById('closeCaseDetailModal').onclick = () => {
+    document.getElementById('caseDetailModal').classList.add('hidden');
+    document.getElementById('caseDetailModal').classList.remove('flex');
+};
 
-        function loadProducts() { db.ref('products').orderByChild('timestamp').limitToLast(30).on('value', (snapshot) => { const products = []; snapshot.forEach(child => products.unshift(child.val())); renderProducts(products); updateBanner(products); }); }
-        function renderProducts(products) {
-            const container = document.getElementById('productsGrid');
-            if(!container) return;
-            if(products.length === 0) { container.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">✨ لا توجد منتجات حالياً ✨</div>'; return; }
-            container.innerHTML = products.map(prod => `<div class="bg-white rounded-2xl shadow-md p-4 product-card relative">${prod.imageUrl ? `<img src="${prod.imageUrl}" class="w-full h-40 object-cover rounded-xl mb-3">` : '<div class="text-5xl mb-2 text-center">🛒📱</div>'}<h3 class="font-bold text-lg">${prod.name}</h3><p class="text-gray-600 text-sm line-clamp-2">${prod.desc || ''}</p><p class="text-green-700 font-bold mt-2">💰 ${prod.price}</p><p class="text-gray-500 text-sm">🏪 ${prod.storeName || 'متجر'}</p><a href="https://wa.me/${(prod.whatsapp || '').replace(/[^0-9]/g, '')}" target="_blank" class="mt-3 bg-green-500 text-white px-4 py-2 rounded-full text-sm w-full block text-center">📲 واتساب</a>${(prod.userPhone === currentUserPhone || isAdmin) ? `<button onclick="window.openEditModal('${prod.id}', \`${prod.name.replace(/`/g, '\\`')}\`, \`${(prod.desc || '').replace(/`/g, '\\`')}\`, \`${prod.price.replace(/`/g, '\\`')}\`)" class="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs">✏️ تعديل</button>` : ''}</div>`).join('');
-        }
-        
-        let bannerProducts = [], bannerIndex = 0, bannerInterval;
-        function updateBanner(products) { bannerProducts = products.slice(0, 5); if(bannerProducts.length) showBanner(0); }
-        function showBanner(idx) { const prod = bannerProducts[idx]; if(!prod) return; document.getElementById('bannerName').innerHTML = prod.name; document.getElementById('bannerStore').innerHTML = prod.storeName || ''; document.getElementById('bannerPrice').innerHTML = prod.price || ''; if(prod.imageUrl) { document.getElementById('bannerImage').src = prod.imageUrl; document.getElementById('bannerImage').classList.remove('hidden'); } else document.getElementById('bannerImage').classList.add('hidden'); document.getElementById('bannerWhatsapp').href = `https://wa.me/${(prod.whatsapp || '').replace(/[^0-9]/g, '')}`; }
-        function startBannerSlider() { if(bannerInterval) clearInterval(bannerInterval); bannerInterval = setInterval(() => { if(bannerProducts.length) { bannerIndex = (bannerIndex + 1) % bannerProducts.length; showBanner(bannerIndex); } }, 7000); }
-        
-        // ====================== الملف الشخصي ======================
-        async function loadProfile() { const snapshot = await db.ref(`profiles/${currentUserPhone}`).once('value'); const p = snapshot.val() || {}; document.getElementById('profileStoreName').value = p.storeName || ''; document.getElementById('profileAddress').value = p.address || ''; document.getElementById('profileWhatsapp').value = p.whatsapp || ''; document.getElementById('profileWhatsapp2').value = p.whatsapp2 || ''; document.getElementById('profilePhone').value = p.phone || ''; }
-        document.getElementById('openProfileBtn').onclick = () => { loadProfile(); document.getElementById('profileModal').classList.remove('hidden'); };
-        document.getElementById('saveProfileBtn').onclick = async () => { await db.ref(`profiles/${currentUserPhone}`).set({ storeName: document.getElementById('profileStoreName').value, address: document.getElementById('profileAddress').value, whatsapp: document.getElementById('profileWhatsapp').value, whatsapp2: document.getElementById('profileWhatsapp2').value, phone: document.getElementById('profilePhone').value, updatedAt: Date.now() }); alert('✅ تم حفظ بيانات متجرك'); document.getElementById('profileModal').classList.add('hidden'); };
-        
-        // ====================== لوحة تحكم ADMIN ======================
-        async function loadUsersListFixed() {
-            const snapshot = await db.ref('users').once('value');
-            const users = snapshot.val();
-            const container = document.getElementById('usersList');
-            if(!users || Object.keys(users).length === 0) { container.innerHTML = '<div class="text-gray-500 text-center py-4">📭 لا يوجد تجار مسجلين</div>'; return; }
-            container.innerHTML = '';
-            for(let phone in users) { const user = users[phone]; container.innerHTML += `<div class="flex justify-between items-center bg-white p-3 rounded-xl border mb-2"><div><p class="font-bold">${user.name || 'بدون اسم'}</p><p class="text-sm text-gray-600">📱 ${phone}</p><p class="text-sm text-gray-600">🏪 ${user.storeName || '-'}</p><p class="text-xs text-green-600">🔑 ${user.password || 'غير محددة'}</p></div><div class="flex gap-2"><button onclick="window.adminResetPassword('${phone}')" class="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm">🔄 تغيير</button><button onclick="window.adminDeleteUserFixed('${phone}')" class="bg-red-500 text-white px-3 py-1 rounded-full text-sm">🗑 حذف</button></div></div>`; }
-        }
-        async function loadRequestsListFixed() {
-            const snapshot = await db.ref('requests').once('value');
-            const requests = snapshot.val();
-            const container = document.getElementById('requestsList');
-            if(!requests || Object.keys(requests).length === 0) { container.innerHTML = '<div class="text-gray-500 text-center py-4">📭 لا توجد طلبات جديدة</div>'; return; }
-            container.innerHTML = '';
-            for(let id in requests) { const req = requests[id]; container.innerHTML += `<div class="flex justify-between items-center bg-white p-3 rounded-xl border mb-2"><div><p class="font-bold">${req.name || 'بدون اسم'}</p><p class="text-sm text-gray-600">📱 ${req.phone || '-'}</p><p class="text-sm text-gray-600">🏪 ${req.store || '-'}</p><p class="text-xs text-gray-400">${req.timestamp ? new Date(req.timestamp).toLocaleString('ar') : ''}</p></div><div class="flex gap-2"><button onclick="window.adminAcceptRequestFixed('${id}', '${req.phone}', '${req.name}', '${req.store}')" class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">✅ قبول</button><button onclick="window.adminDeleteRequestFixed('${id}')" class="bg-gray-400 text-white px-3 py-1 rounded-full text-sm">❌ حذف</button></div></div>`; }
-        }
-        window.adminDeleteUserFixed = async (phone) => { if(confirm('حذف التاجر؟')) { await db.ref(`users/${phone}`).remove(); loadUsersListFixed(); } };
-        window.adminResetPassword = async (phone) => { const newPassword = prompt("كلمة السر الجديدة", "mkt123"); if(newPassword && newPassword.length >= 4) { await db.ref(`users/${phone}/password`).set(newPassword); alert('✅ تم التغيير'); loadUsersListFixed(); } else if(newPassword) alert('❌ 4 أحرف على الأقل'); };
-        window.adminAcceptRequestFixed = async (requestId, phone, name, store) => { const password = Math.random().toString(36).substring(2, 8); await db.ref(`users/${phone}`).set({ name, storeName: store || 'متجر', password, active: true, createdAt: Date.now() }); await db.ref(`requests/${requestId}`).remove(); alert(`✅ تم التفعيل\nالرقم: ${phone}\nكلمة السر: ${password}`); loadUsersListFixed(); loadRequestsListFixed(); };
-        window.adminDeleteRequestFixed = async (id) => { if(confirm('حذف الطلب؟')) { await db.ref(`requests/${id}`).remove(); loadRequestsListFixed(); } };
-        document.getElementById('addUserBtn').onclick = async () => { const name = document.getElementById('adminName').value.trim(); const phone = document.getElementById('adminPhone').value.trim(); const store = document.getElementById('adminStore').value.trim(); const password = document.getElementById('adminPassword').value.trim(); if(!name || !phone) { alert('الاسم والرقم مطلوبين'); return; } await db.ref(`users/${phone}`).set({ name, storeName: store || 'متجر', password: password || 'mkt123', active: true, createdAt: Date.now() }); alert(`✅ تم إضافة التاجر`); loadUsersListFixed(); };
-        document.getElementById('openAdminPanelBtn').onclick = () => { if(isAdmin) { loadUsersListFixed(); loadRequestsListFixed(); document.getElementById('adminPanel').classList.remove('hidden'); } else alert('للمدير فقط'); };
-        
-        // ====================== إغلاق المودالات ======================
-        document.getElementById('closeProductModal')?.addEventListener('click', () => document.getElementById('productModal')?.classList.add('hidden'));
-        document.getElementById('closeProfileModal')?.addEventListener('click', () => document.getElementById('profileModal')?.classList.add('hidden'));
-        document.getElementById('closeEditModal')?.addEventListener('click', () => document.getElementById('editProductModal')?.classList.add('hidden'));
-        document.getElementById('closeAdminPanel')?.addEventListener('click', () => document.getElementById('adminPanel')?.classList.add('hidden'));
-        document.getElementById('closeRequestModal')?.addEventListener('click', () => document.getElementById('requestModal')?.classList.add('hidden'));
-        document.getElementById('openAddProductBtn')?.addEventListener('click', () => document.getElementById('productModal')?.classList.remove('hidden'));
-        document.getElementById('refreshProducts')?.addEventListener('click', () => loadProducts());
-        document.getElementById('logoutMainBtn')?.addEventListener('click', () => { localStorage.removeItem('loggedInPhone'); location.reload(); });
-        document.getElementById('tabProducts').onclick = () => { document.getElementById('productsSection').classList.remove('hidden'); document.getElementById('chatSection').classList.add('hidden'); document.getElementById('tabProducts').classList.add('border-b-2', 'border-green-700', 'text-green-700'); document.getElementById('tabChat').classList.remove('border-b-2', 'border-green-700', 'text-green-700'); };
-        document.getElementById('openChatBtn').onclick = () => { document.getElementById('productsSection').classList.add('hidden'); document.getElementById('chatSection').classList.remove('hidden'); document.getElementById('tabChat').classList.add('border-b-2', 'border-green-700', 'text-green-700'); document.getElementById('tabProducts').classList.remove('border-b-2', 'border-green-700', 'text-green-700'); loadChatMessages(); };
-        document.getElementById('openRequestBtn').onclick = () => document.getElementById('requestModal').classList.remove('hidden');
-        
-        window.openEditModal = (id, name, desc, price) => {
-            window.currentEditProduct = { id, name, desc, price };
-            document.getElementById('editProductId').value = id;
-            document.getElementById('editName').value = name;
-            document.getElementById('editDesc').value = desc;
-            document.getElementById('editPrice').value = price;
-            document.getElementById('editProductModal').classList.remove('hidden');
-        };
-        document.getElementById('updateProductBtn').onclick = async () => { if(window.currentEditProduct) { await db.ref(`products/${window.currentEditProduct.id}`).update({ name: document.getElementById('editName').value, desc: document.getElementById('editDesc').value, price: document.getElementById('editPrice').value }); alert('تم التحديث'); document.getElementById('editProductModal').classList.add('hidden'); loadProducts(); } };
-        document.getElementById('deleteProductBtn').onclick = async () => { if(window.currentEditProduct && confirm('حذف المنتج؟')) { await db.ref(`products/${window.currentEditProduct.id}`).remove(); alert('تم الحذف'); document.getElementById('editProductModal').classList.add('hidden'); loadProducts(); } };
-        
-        // بدء التطبيق
-        setupEnterNavigation();
-        loadProducts(); startBannerSlider(); loadAdsBar();
-        const savedPhone = localStorage.getItem('loggedInPhone');
-        if(savedPhone) { db.ref(`users/${savedPhone}`).once('value').then(snap => { if(snap.val()) { currentUserPhone = savedPhone; currentUserData = snap.val(); isAdmin = (savedPhone === ADMIN_NUMBER); document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('appScreen').classList.remove('hidden'); document.getElementById('welcomeMsg').innerHTML = `مرحباً ${currentUserData.name || 'تاجر'} ${isAdmin ? '👑' : ''}`; if(isAdmin) document.getElementById('openAdminPanelBtn').classList.remove('hidden'); loadProducts(); loadChatMessages(); loadAdsBar(); } }); }
-    </script>
+// نشر حالة تبرع جديدة
+document.getElementById('submitDonationCaseBtn').onclick = async () => {
+    const title = document.getElementById('donationCaseTitle').value.trim();
+    const desc = document.getElementById('donationCaseDesc').value.trim();
+    const target = parseFloat(document.getElementById('donationCaseTarget').value);
+    const wallet = document.getElementById('donationCaseWallet').value.trim();
+    if (!title || !target || !wallet) { alert('❌ العنوان والمبلغ ورقم المحفظة مطلوبين'); return; }
+
+    const btn = document.getElementById('submitDonationCaseBtn');
+    btn.disabled = true; btn.textContent = '⏳ جارٍ النشر...';
+
+    let payMethods = [];
+    if (document.getElementById('payVodafone').checked) payMethods.push('فودافون كاش');
+    if (document.getElementById('payInstapay').checked) payMethods.push('إنستاباي');
+    if (document.getElementById('payBank').checked) payMethods.push('تحويل بنكي');
+    if (document.getElementById('payHand').checked) payMethods.push('يداً بيد');
+
+    let imageUrl = null;
+    if (donationSelectedImage) {
+        try { imageUrl = await uploadImageToCloudinary(donationSelectedImage); } catch(e) {}
+    }
+
+    const caseData = {
+        title, desc, target,
+        collected: 0,
+        wallet,
+        payMethods: payMethods.join(' | ') || 'غير محدد',
+        ownerPhone: currentUserPhone,
+        ownerName: currentUserData?.name || 'تاجر',
+        ownerStore: currentUserData?.storeName || currentUserData?.name || 'متجر',
+        imageUrl,
+        status: 'active',
+        timestamp: Date.now()
+    };
+
+    const ref = db.ref('donationCases').push();
+    caseData.id = ref.key;
+    await ref.set(caseData);
+
+    btn.disabled = false; btn.textContent = '📤 نشر الحالة';
+    document.getElementById('donationCaseModal').classList.add('hidden');
+    document.getElementById('donationCaseModal').classList.remove('flex');
+    // Reset
+    ['donationCaseTitle','donationCaseDesc','donationCaseTarget','donationCaseWallet'].forEach(id => document.getElementById(id).value = '');
+    ['payVodafone','payInstapay','payBank','payHand'].forEach(id => document.getElementById(id).checked = false);
+    document.getElementById('donationImagePreview').classList.add('hidden');
+    donationSelectedImage = null;
+
+    alert('✅ تم نشر حالتك! التجار هيشوفوها دلوقتي ❤️');
+    loadDonationCases();
+};
+
+// تحميل وعرض الحالات
+function loadDonationCases() {
+    db.ref('donationCases').orderByChild('timestamp').on('value', snap => {
+        const cases = [];
+        snap.forEach(c => cases.unshift(c.val()));
+        renderDonationCases(cases);
+        updateDonationStats(cases);
+    });
+}
+
+function updateDonationStats(cases) {
+    document.getElementById('statTotalCases').textContent = cases.length;
+    let totalDonors = 0, totalAmount = 0;
+    cases.forEach(c => {
+        totalDonors += (c.donorsCount || 0);
+        totalAmount += (c.collected || 0);
+    });
+    document.getElementById('statTotalDonors').textContent = totalDonors;
+    document.getElementById('statTotalAmount').textContent = totalAmount.toLocaleString('ar-EG');
+}
+
+function renderDonationCases(cases) {
+    const container = document.getElementById('donationCasesList');
+    if (!cases.length) {
+        container.innerHTML = `<div class="text-center py-16 text-gray-400">
+            <div class="text-6xl mb-4">💝</div>
+            <p class="text-lg font-bold">لا توجد حالات حالياً</p>
+            <p class="text-sm mt-2">كن أول من ينشر حالة احتياج</p>
+        </div>`;
+        return;
+    }
+
+    container.innerHTML = cases.map(c => {
+        const pct = Math.min(100, Math.round((c.collected / c.target) * 100));
+        const remaining = Math.max(0, c.target - c.collected);
+        const isDone = pct >= 100;
+        const isUrgent = pct < 30;
+        const isOwner = c.ownerPhone === currentUserPhone || isAdmin;
+        const barClass = isDone ? 'done' : (isUrgent ? 'urgent' : '');
+        const badgeClass = isDone ? 'badge-done' : (isUrgent ? 'badge-urgent' : 'badge-active');
+        const badgeText = isDone ? '✅ اكتملت' : (isUrgent ? '🔴 عاجل' : '🟢 نشطة');
+
+        return `
+        <div class="donation-card">
+            ${c.imageUrl ? `<img src="${c.imageUrl}" class="w-full h-48 object-cover">` : ''}
+            <div class="p-5">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex-1">
+                        <span class="donation-status-badge ${badgeClass} ml-2">${badgeText}</span>
+                        <h3 class="text-lg font-black text-gray-800 mt-1">${c.title}</h3>
+                        <p class="text-sm text-gray-500 mt-1">🏪 ${c.ownerStore} — ${c.ownerName}</p>
+                    </div>
+                </div>
+
+                ${c.desc ? `<p class="text-gray-600 text-sm mb-3 leading-relaxed">${c.desc}</p>` : ''}
+
+                <!-- شريط التقدم -->
+                <div class="bg-gray-50 rounded-2xl p-4 mb-4">
+                    <div class="flex justify-between text-sm font-bold mb-2">
+                        <span class="text-gray-500">تم جمع</span>
+                        <span class="text-2xl font-black ${isDone ? 'text-purple-600' : 'text-green-600'}">${pct}%</span>
+                    </div>
+                    <div class="progress-bar-wrap">
+                        <div class="progress-bar-fill ${barClass}" style="width:${pct}%"></div>
+                    </div>
+                    <div class="flex justify-between mt-3 text-sm">
+                        <div class="text-center">
+                            <p class="font-black text-green-700 text-lg">${(c.collected||0).toLocaleString('ar-EG')} ج.م</p>
+                            <p class="text-gray-400 text-xs">تم جمعه</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="font-black text-orange-500 text-lg">${remaining.toLocaleString('ar-EG')} ج.م</p>
+                            <p class="text-gray-400 text-xs">المتبقي</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="font-black text-blue-600 text-lg">${(c.target||0).toLocaleString('ar-EG')} ج.م</p>
+                            <p class="text-gray-400 text-xs">الهدف</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- المتبرعون الأخيرون -->
+                ${c.recentDonors ? `
+                <div class="mb-3">
+                    <p class="text-xs text-gray-400 mb-2">❤️ آخر المتبرعين:</p>
+                    <div class="flex flex-wrap gap-2">
+                        ${c.recentDonors.map(d => `<span class="donor-chip">💚 ${d.name} — ${d.amount} ج.م</span>`).join('')}
+                    </div>
+                </div>` : ''}
+
+                <!-- طرق الدفع -->
+                ${c.payMethods && c.payMethods !== 'غير محدد' ? `<p class="text-xs text-gray-400 mb-3">💳 طرق الدفع: <span class="text-gray-600 font-bold">${c.payMethods}</span></p>` : ''}
+                ${c.wallet ? `<p class="text-xs text-gray-400 mb-3">📱 رقم المحفظة: <span class="text-gray-700 font-bold" dir="ltr">${c.wallet}</span></p>` : ''}
+
+                <!-- الأزرار -->
+                <div class="flex gap-2 flex-wrap">
+                    ${!isDone ? `<button onclick="openDonateModal('${c.id}')" class="flex-1 bg-green-600 text-white py-2 rounded-xl font-bold hover:bg-green-700 text-sm">❤️ تبرع الآن</button>` : '<div class="flex-1 bg-purple-100 text-purple-700 py-2 rounded-xl font-bold text-center text-sm">🎉 اكتمل الهدف!</div>'}
+                    <button onclick="openCaseDetail('${c.id}')" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl text-sm hover:bg-gray-200">👁 التفاصيل</button>
+                    ${isOwner ? `<button onclick="closeDonationCase('${c.id}','${isDone}')" class="bg-${isDone?'gray':'rose'}-500 text-white px-4 py-2 rounded-xl text-sm hover:opacity-90">${isDone ? '🗑 حذف' : '✅ تحقق/أغلق'}</button>` : ''}
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// فتح مودال التبرع
+window.openDonateModal = async (caseId) => {
+    const snap = await db.ref(`donationCases/${caseId}`).once('value');
+    const c = snap.val();
+    if (!c) return;
+    document.getElementById('donateCaseId').value = caseId;
+    const pct = Math.min(100, Math.round(((c.collected||0) / c.target) * 100));
+    const remaining = Math.max(0, c.target - (c.collected||0));
+    document.getElementById('donateModalCaseInfo').innerHTML = `
+        <p class="font-bold text-gray-800 mb-1">${c.title}</p>
+        <p class="text-gray-500 text-xs mb-2">🏪 ${c.ownerStore}</p>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+        <div class="flex justify-between text-xs mt-2">
+            <span class="text-green-600 font-bold">تم: ${(c.collected||0).toLocaleString()} ج.م</span>
+            <span class="text-orange-500 font-bold">متبقي: ${remaining.toLocaleString()} ج.م</span>
+        </div>
+        ${c.payMethods ? `<p class="text-xs text-gray-400 mt-2">💳 ${c.payMethods}</p>` : ''}
+        ${c.wallet ? `<p class="text-xs text-gray-700 font-bold mt-1">📱 ${c.wallet}</p>` : ''}
+    `;
+    document.getElementById('donateModal').classList.remove('hidden');
+    document.getElementById('donateModal').classList.add('flex');
+    donateReceiptFile = null;
+    document.getElementById('donateAmount').value = '';
+    document.getElementById('donateNote').value = '';
+    document.getElementById('donateReceiptPreview').classList.add('hidden');
+};
+
+// تأكيد التبرع
+document.getElementById('submitDonateBtn').onclick = async () => {
+    const caseId = document.getElementById('donateCaseId').value;
+    const amount = parseFloat(document.getElementById('donateAmount').value);
+    if (!amount || amount <= 0) { alert('❌ أدخل مبلغاً صحيحاً'); return; }
+
+    const btn = document.getElementById('submitDonateBtn');
+    btn.disabled = true; btn.textContent = '⏳ جارٍ التسجيل...';
+
+    let receiptUrl = null;
+    if (donateReceiptFile) {
+        try { receiptUrl = await uploadImageToCloudinary(donateReceiptFile); } catch(e) {}
+    }
+
+    const donorData = {
+        caseId,
+        donorPhone: currentUserPhone,
+        donorName: currentUserData?.name || 'تاجر',
+        donorStore: currentUserData?.storeName || currentUserData?.name || 'متجر',
+        amount,
+        note: document.getElementById('donateNote').value.trim(),
+        receiptUrl,
+        timestamp: Date.now()
+    };
+
+    // إضافة التبرع
+    await db.ref(`donationCases/${caseId}/donors`).push(donorData);
+
+    // تحديث المبلغ المجموع
+    const snap = await db.ref(`donationCases/${caseId}`).once('value');
+    const caseData = snap.val();
+    const newCollected = (caseData.collected || 0) + amount;
+    const newCount = (caseData.donorsCount || 0) + 1;
+
+    // آخر 3 متبرعين
+    const recentDonors = caseData.recentDonors || [];
+    recentDonors.unshift({ name: donorData.donorName, amount });
+    const trimmed = recentDonors.slice(0, 3);
+
+    await db.ref(`donationCases/${caseId}`).update({
+        collected: newCollected,
+        donorsCount: newCount,
+        recentDonors: trimmed,
+        status: newCollected >= caseData.target ? 'done' : 'active'
+    });
+
+    btn.disabled = false; btn.textContent = '❤️ تأكيد التبرع';
+    document.getElementById('donateModal').classList.add('hidden');
+    document.getElementById('donateModal').classList.remove('flex');
+
+    const isDone = newCollected >= caseData.target;
+    alert(isDone
+        ? `🎉 تبرعت بـ ${amount} ج.م وأكملت الهدف! جزاك الله خيراً ❤️`
+        : `✅ سُجّل تبرعك بـ ${amount} ج.م! جزاك الله خيراً ❤️`
+    );
+};
+
+// تفاصيل الحالة والمتبرعون
+window.openCaseDetail = async (caseId) => {
+    const snap = await db.ref(`donationCases/${caseId}`).once('value');
+    const c = snap.val();
+    if (!c) return;
+
+    const donorsSnap = await db.ref(`donationCases/${caseId}/donors`).orderByChild('timestamp').once('value');
+    const donors = [];
+    donorsSnap.forEach(d => donors.unshift(d.val()));
+
+    const pct = Math.min(100, Math.round(((c.collected||0) / c.target) * 100));
+    const remaining = Math.max(0, c.target - (c.collected||0));
+
+    document.getElementById('caseDetailContent').innerHTML = `
+        ${c.imageUrl ? `<img src="${c.imageUrl}" class="w-full h-48 object-cover rounded-2xl mb-4">` : ''}
+        <h3 class="font-black text-xl mb-1">${c.title}</h3>
+        <p class="text-gray-500 text-sm mb-3">🏪 ${c.ownerStore} — ${c.ownerName}</p>
+        ${c.desc ? `<p class="text-gray-600 text-sm mb-4 leading-relaxed">${c.desc}</p>` : ''}
+
+        <div class="bg-gray-50 rounded-2xl p-4 mb-4">
+            <div class="progress-bar-wrap"><div class="progress-bar-fill ${pct>=100?'done':pct<30?'urgent':''}" style="width:${pct}%"></div></div>
+            <div class="grid grid-cols-3 gap-2 mt-3 text-center text-sm">
+                <div><p class="font-black text-green-600 text-lg">${(c.collected||0).toLocaleString()} ج.م</p><p class="text-gray-400 text-xs">تم جمعه</p></div>
+                <div><p class="font-black text-orange-500 text-lg">${remaining.toLocaleString()} ج.م</p><p class="text-gray-400 text-xs">المتبقي</p></div>
+                <div><p class="font-black text-blue-600 text-lg">${(c.target||0).toLocaleString()} ج.م</p><p class="text-gray-400 text-xs">الهدف</p></div>
+            </div>
+        </div>
+
+        <h4 class="font-bold text-gray-700 mb-3">❤️ قائمة المتبرعين (${donors.length})</h4>
+        <div class="space-y-2 max-h-60 overflow-y-auto">
+            ${donors.length ? donors.map(d => `
+                <div class="flex items-center justify-between bg-gray-50 rounded-xl p-3">
+                    <div>
+                        <p class="font-bold text-sm">${d.donorName} — ${d.donorStore}</p>
+                        ${d.note ? `<p class="text-xs text-gray-400">${d.note}</p>` : ''}
+                        <p class="text-xs text-gray-400">${new Date(d.timestamp).toLocaleString('ar')}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-black text-green-600">${d.amount.toLocaleString()} ج.م</p>
+                        ${d.receiptUrl ? `<a href="${d.receiptUrl}" target="_blank" class="text-xs text-blue-500 hover:underline">📷 إيصال</a>` : ''}
+                    </div>
+                </div>`).join('') : '<p class="text-gray-400 text-center py-4">لا توجد تبرعات بعد</p>'}
+        </div>
+    `;
+
+    document.getElementById('caseDetailModal').classList.remove('hidden');
+    document.getElementById('caseDetailModal').classList.add('flex');
+};
+
+// إغلاق/حذف حالة
+window.closeDonationCase = async (caseId, isDone) => {
+    const msg = isDone ? 'حذف هذه الحالة المكتملة؟' : 'تأكيد استلام المبلغ وإغلاق الحالة؟';
+    if (!confirm(msg)) return;
+    await db.ref(`donationCases/${caseId}`).update({ status: 'closed' });
+    if (isDone || confirm('حذف الحالة نهائياً من القائمة؟')) {
+        await db.ref(`donationCases/${caseId}`).remove();
+    }
+    loadDonationCases();
+};
+
+</script>
 </body>
 </html>
