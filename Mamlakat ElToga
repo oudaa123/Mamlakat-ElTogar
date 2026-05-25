@@ -1,467 +1,1541 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>مملكة التجار | المنصة الاحترافية</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        * { font-family: 'Cairo', sans-serif; }
-        .product-card { transition: transform 0.2s, box-shadow 0.2s; }
-        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
-        .message-bubble { max-width: 75%; border-radius: 18px; }
-        .message-sent { background: #dcf8c5; margin-right: auto; border-bottom-right-radius: 4px; }
-        .message-received { background: white; margin-left: auto; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .online-indicator { width: 10px; height: 10px; border-radius: 50%; background: #25D366; display: inline-block; }
-        .chat-container { height: calc(100vh - 280px); }
-        .record-btn { transition: all 0.2s; }
-        .record-btn.recording { background: #ef4444; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        input:focus, textarea:focus, select:focus { outline: none; border-color: #22c55e; box-shadow: 0 0 0 2px rgba(34,197,94,0.2); }
-        @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-        .animate-marquee { animation: marquee 20s linear infinite; display: inline-block; white-space: nowrap; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>مملكة التجار</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{font-family:'Cairo',sans-serif;box-sizing:border-box}
+body{background:#f0f2f5;margin:0;padding:0;max-width:480px;margin:0 auto;min-height:100vh;position:relative}
+/* ===== App Shell ===== */
+#appShell{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+#topBar{flex-shrink:0;background:#075E54;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+#mainContent{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#f0f2f5}
+#bottomNav{flex-shrink:0;background:#fff;border-top:1px solid #e0e0e0;display:flex;box-shadow:0 -2px 8px rgba(0,0,0,0.05)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;cursor:pointer;border:none;background:none;color:#8696A0;font-size:10px;font-family:'Cairo',sans-serif;transition:color 0.2s;position:relative}
+.nav-item.active{color:#075E54}
+.nav-item .nav-icon{font-size:20px;margin-bottom:2px}
+.nav-badge{position:absolute;top:4px;right:20%;background:#25D366;color:#fff;font-size:9px;padding:1px 5px;border-radius:99px;min-width:16px;text-align:center}
+/* ===== شريط الإعلانات ===== */
+#adsTickerWrap{background:linear-gradient(90deg,#FF6B35,#F7931E);overflow:hidden;height:28px;display:flex;align-items:center;flex-shrink:0}
+@keyframes ticker{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+#adsTicker{animation:ticker 25s linear infinite;white-space:nowrap;font-size:12px;color:#fff;padding:0 20px}
+/* ===== بطاقة منتج ===== */
+.product-card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-bottom:10px;transition:transform 0.15s}
+.product-card:active{transform:scale(0.98)}
+.product-img{width:100%;height:160px;object-fit:cover;background:#f5f5f5}
+.product-img-placeholder{width:100%;height:160px;display:flex;align-items:center;justify-content:center;font-size:48px;background:linear-gradient(135deg,#f5f5f5,#e0e0e0)}
+/* ===== شاشة الإعلانات ===== */
+#adSlideScreen{background:#000;flex:1;display:flex;flex-direction:column;position:relative;min-height:0}
+.ad-img-full{width:100%;height:240px;object-fit:cover}
+.ad-img-placeholder{width:100%;height:240px;display:flex;align-items:center;justify-content:center;font-size:80px;background:linear-gradient(135deg,#1a1a2e,#16213e)}
+.ad-progress{height:3px;background:rgba(255,255,255,0.15);overflow:hidden}
+.ad-progress-fill{height:100%;background:linear-gradient(90deg,#25D366,#128C7E);animation:adprog 5s linear forwards}
+@keyframes adprog{from{width:100%}to{width:0}}
+.ad-body{padding:14px 16px;background:#111;flex:1}
+.ad-counter{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);color:#fff;font-size:11px;padding:3px 10px;border-radius:99px}
+/* ===== شات ===== */
+.msg-bubble{max-width:78%;border-radius:12px;padding:8px 12px;margin:3px 0;position:relative;word-break:break-word}
+.msg-me{background:#DCF8C6;margin-left:auto;border-bottom-right-radius:3px}
+.msg-other{background:#fff;margin-right:auto;border-bottom-left-radius:3px;box-shadow:0 1px 2px rgba(0,0,0,0.1)}
+.msg-time{font-size:10px;color:#8696A0;text-align:left;margin-top:2px;display:flex;align-items:center;gap:2px;justify-content:flex-end}
+.tick{color:#8696A0;font-size:12px}
+.tick.blue{color:#53BDEB}
+/* ===== المودالات ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-sheet{background:#fff;width:100%;max-width:480px;border-radius:20px 20px 0 0;max-height:90vh;overflow-y:auto;padding:0 0 20px}
+.modal-handle{width:36px;height:4px;background:#e0e0e0;border-radius:2px;margin:12px auto 16px}
+.modal-header{padding:0 16px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0}
+.modal-body{padding:16px}
+/* ===== الحقول ===== */
+.field{width:100%;border:1.5px solid #e0e0e0;border-radius:12px;padding:11px 14px;font-size:14px;font-family:'Cairo',sans-serif;transition:border-color 0.2s;background:#fff}
+.field:focus{outline:none;border-color:#075E54}
+.field-label{font-size:12px;font-weight:700;color:#667;margin-bottom:5px;display:block}
+/* ===== الأزرار ===== */
+.btn-primary{background:#075E54;color:#fff;border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:700;font-family:'Cairo',sans-serif;width:100%;cursor:pointer;transition:opacity 0.2s;-webkit-tap-highlight-color:transparent}
+.btn-primary:active{opacity:0.85}
+.btn-secondary{background:#f0f0f0;color:#333;border:none;border-radius:12px;padding:11px;font-size:14px;font-weight:600;font-family:'Cairo',sans-serif;cursor:pointer}
+.btn-danger{background:#ff4444;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;font-family:'Cairo',sans-serif;cursor:pointer}
+.btn-sm{padding:7px 14px;font-size:12px;border-radius:8px;border:none;cursor:pointer;font-family:'Cairo',sans-serif;font-weight:700}
+/* ===== شاشة تسجيل الدخول ===== */
+#loginScreen{position:fixed;inset:0;background:linear-gradient(160deg,#075E54 0%,#128C7E 60%,#25D366 100%);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:#fff;border-radius:24px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+/* ===== التبرعات ===== */
+.donation-card{background:#fff;border-radius:14px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.progress-wrap{background:#f0f0f0;border-radius:99px;height:8px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#25D366,#128C7E)}
+.progress-fill.urgent{background:linear-gradient(90deg,#ff4444,#ff8800)}
+.progress-fill.done{background:linear-gradient(90deg,#7c3aed,#a855f7)}
+/* ===== المخزن ===== */
+.inventory-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f5f5f5}
+/* ===== علامات القراءة ===== */
+.record-btn.recording{background:#ff4444!important;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+input:focus,textarea:focus{outline:none}
+/* إخفاء scrollbar على موبايل */
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#ccc;border-radius:99px}
+/* ===== الغرف ===== */
+.room-card{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 6px rgba(0,0,0,0.06)}
+</style>
 </head>
-<body class="bg-gray-100">
+<body>
 
-    <!-- شاشة تسجيل الدخول -->
-    <div id="loginScreen" class="fixed inset-0 bg-gradient-to-br from-green-900 to-green-700 z-50 flex items-center justify-center p-4">
-        <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 text-center">
-            <div class="text-7xl mb-3 flex justify-center gap-2">🛒📱</div>
-            <h1 class="text-3xl font-black text-green-800">مملكة التجار</h1>
-            <p class="text-gray-500 text-sm">Mamlakat ElTogar | elec.ping</p>
-            <div class="mt-6 space-y-3">
-                <input type="tel" id="loginPhone" placeholder="رقم الموبايل" class="w-full border-2 rounded-xl p-3 text-center text-lg" dir="ltr">
-                <input type="password" id="loginPassword" placeholder="كلمة السر" class="w-full border-2 rounded-xl p-3 text-center text-lg" dir="ltr">
-                <button id="doLoginBtn" class="w-full bg-green-700 text-white py-3 rounded-xl font-bold hover:bg-green-800 transition">🚪 دخول</button>
-                <button id="openRequestBtn" class="w-full border-2 border-green-600 text-green-700 py-3 rounded-xl font-bold hover:bg-green-50 transition">📝 طلب تسجيل تاجر جديد</button>
-            </div>
-        </div>
+<!-- ===== شاشة تسجيل الدخول ===== -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:52px;margin-bottom:8px">🛒</div>
+      <h1 style="font-size:24px;font-weight:900;color:#075E54;margin:0">مملكة التجار</h1>
+      <p style="font-size:12px;color:#999;margin:4px 0 0">Mamlakat ElTogar</p>
     </div>
-
-    <!-- مودال طلب تسجيل -->
-    <div id="requestModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6">
-            <h2 class="text-2xl font-bold text-green-800 text-center">📝 طلب تسجيل تاجر جديد</h2>
-            <p class="text-gray-500 text-sm text-center mb-4">سيتم إرسال طلبك للمدير للتفعيل</p>
-            <input type="text" id="reqName" placeholder="الاسم كامل" class="w-full border rounded-xl p-3 mb-3">
-            <input type="tel" id="reqPhone" placeholder="رقم الموبايل" class="w-full border rounded-xl p-3 mb-3" dir="ltr">
-            <input type="text" id="reqStore" placeholder="اسم المحل (اتركه فارغاً لاستخدام نفس الاسم)" class="w-full border rounded-xl p-3 mb-3">
-            <input type="text" id="reqClientWord" placeholder="كلمة العميل (اختر كلمة خاصة بك)" class="w-full border rounded-xl p-3 mb-4">
-            <button id="submitRequestBtn" class="bg-green-700 text-white w-full py-3 rounded-xl font-bold hover:bg-green-800">📤 إرسال الطلب</button>
-            <button id="closeRequestModal" class="bg-gray-300 w-full mt-2 py-2 rounded-xl">إلغاء</button>
-        </div>
+    <!-- اختيار نوع المستخدم -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;background:#f5f5f5;border-radius:12px;padding:4px">
+      <button onclick="setUserType('merchant')" id="typemerchant" style="flex:1;padding:8px;border-radius:10px;border:none;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:#075E54;color:#fff;transition:all 0.2s">🏪 تاجر</button>
+      <button onclick="setUserType('customer')" id="typecustomer" style="flex:1;padding:8px;border-radius:10px;border:none;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:#666;transition:all 0.2s">🛍️ عميل</button>
     </div>
-
-    <!-- التطبيق الرئيسي -->
-    <div id="appScreen" class="hidden">
-        <!-- شريط الإعلانات -->
-        <div id="adsBar" class="bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-2 overflow-hidden whitespace-nowrap shadow-md">
-            <div id="adsSlider" class="inline-block animate-marquee px-4"></div>
-        </div>
-
-        <!-- الهيدر -->
-        <div class="bg-white shadow-md sticky top-0 z-40 px-4 py-2 flex flex-wrap justify-between items-center border-b gap-2">
-            <div class="flex items-center gap-3">
-                <div class="bg-gradient-to-r from-green-700 to-green-500 text-white p-2 rounded-2xl flex gap-1 text-xl">🛒📱</div>
-                <div><h1 class="text-xl font-black text-green-800">مملكة التجار</h1><p class="text-[10px] text-gray-400 -mt-1" id="welcomeMsg">مرحباً بك</p></div>
-            </div>
-            <div class="flex gap-2 flex-wrap">
-                <button id="openProfileBtn" class="bg-purple-600 text-white px-3 py-2 rounded-full text-sm font-bold hover:bg-purple-700">👤 ملفي</button>
-                <button id="openChatBtn" class="bg-blue-600 text-white px-3 py-2 rounded-full text-sm font-bold hover:bg-blue-700">💬 الشات العام</button>
-                <button id="openAdminPanelBtn" class="bg-indigo-600 text-white px-3 py-2 rounded-full text-sm font-bold hidden hover:bg-indigo-700">👑 لوحة التحكم</button>
-                <button id="openAddProductBtn" class="bg-green-600 text-white px-3 py-2 rounded-full text-sm font-bold hover:bg-green-700">➕ إضافة منتج</button>
-                <button id="logoutMainBtn" class="bg-red-500 text-white px-3 py-2 rounded-full text-sm hover:bg-red-600">🚪 خروج</button>
-            </div>
-        </div>
-
-        <!-- تبويبات -->
-        <div class="border-b bg-white"><div class="flex max-w-7xl mx-auto px-4">
-            <button id="tabProducts" class="py-3 px-6 font-bold text-green-700 border-b-2 border-green-700">🛍️ المنتجات</button>
-            <button id="tabChat" class="py-3 px-6 font-bold text-gray-500 hover:text-green-700">💬 الشات العام</button>
-        </div></div>
-
-        <!-- قسم المنتجات -->
-        <div id="productsSection" class="max-w-7xl mx-auto px-4 py-4">
-            <div id="bannerContainer" class="bg-gradient-to-r from-green-800 to-green-600 rounded-3xl shadow-xl overflow-hidden relative h-56 mb-6">
-                <div id="bannerContent" class="absolute inset-0 flex flex-col md:flex-row items-center justify-between p-6 text-white">
-                    <div class="text-right">
-                        <span class="bg-orange-500 text-xs px-3 py-1 rounded-full">🔥 مملكة التجار</span>
-                        <h2 id="bannerName" class="text-2xl font-bold mt-2">مرحباً بكم</h2>
-                        <p id="bannerStore" class="text-green-200"></p>
-                        <p id="bannerPrice" class="text-xl font-bold mt-2"></p>
-                        <a id="bannerWhatsapp" href="#" target="_blank" class="inline-block mt-2 bg-white text-green-700 px-4 py-1 rounded-full text-sm font-bold">📲 تواصل</a>
-                    </div>
-                    <img id="bannerImage" src="" class="w-32 h-32 rounded-2xl object-cover hidden md:block shadow-lg">
-                </div>
-            </div>
-            <div class="flex justify-between items-center mb-3"><h2 class="font-bold text-xl text-green-800">🆕 أحدث المنتجات</h2><button id="refreshProducts" class="text-green-600 text-sm hover:underline">تحديث</button></div>
-            <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"><div class="col-span-full text-center py-10 text-gray-500">✨ جاري التحميل ✨</div></div>
-        </div>
-
-        <!-- قسم الشات -->
-        <div id="chatSection" class="hidden max-w-7xl mx-auto px-4 py-4">
-            <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
-                <div class="bg-green-700 text-white p-4"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-700 text-xl">💬</div><div><h3 class="font-bold">المجموعة العامة - مملكة التجار</h3><p class="text-xs text-green-200"><span class="online-indicator"></span> جميع التجار متصلون</p></div></div></div>
-                <div id="chatMessages" class="chat-container overflow-y-auto p-4 space-y-3 bg-gray-50" style="height: 500px;"><div class="text-center text-gray-400 py-10">✨ مرحباً بك في المجموعة العامة ✨</div></div>
-                <div class="bg-white p-3 border-t flex gap-2 items-center">
-                    <button id="emojiBtn" class="text-2xl p-2 hover:bg-gray-100 rounded-full">😊</button>
-                    <button id="attachImageBtn" class="text-2xl p-2 hover:bg-gray-100 rounded-full">📷</button>
-                    <button id="voiceRecordBtn" class="record-btn bg-gray-200 p-3 rounded-full w-12 h-12 flex items-center justify-center text-xl hover:bg-gray-300">🎤</button>
-                    <input type="text" id="chatInput" placeholder="اكتب رسالة..." class="flex-1 border rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
-                    <button id="sendChatBtn" class="bg-green-600 text-white p-3 rounded-full w-12 h-12 flex items-center justify-center hover:bg-green-700">➤</button>
-                </div>
-            </div>
-        </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <input type="tel" id="loginPhone" class="field" placeholder="رقم الموبايل" dir="ltr">
+      <div id="passwordRow" style="display:flex;flex-direction:column;gap:10px">
+        <input type="password" id="loginPassword" class="field" placeholder="كلمة السر">
+      </div>
+      <div id="customerNameRow" style="display:none">
+        <input type="text" id="customerName" class="field" placeholder="اسمك (اختياري)">
+      </div>
+      <button class="btn-primary" id="doLoginBtn">🚪 دخول</button>
+      <button id="openRequestBtn" style="background:transparent;border:2px solid #075E54;color:#075E54;border-radius:12px;padding:11px;font-size:14px;font-weight:700;font-family:'Cairo',sans-serif;cursor:pointer;width:100%">📝 طلب تسجيل تاجر جديد</button>
     </div>
+  </div>
+</div>
 
-    <!-- مودال الملف الشخصي -->
-    <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6">
-            <h2 class="text-2xl font-bold text-green-800 mb-4">👤 بيانات متجري الثابتة</h2>
-            <p class="text-sm text-gray-500 mb-3">هذه البيانات تحفظ مرة واحدة وتظهر تلقائياً في كل منتج</p>
-            <input type="text" id="profileStoreName" placeholder="اسم المحل *" class="w-full border rounded-xl p-3 mb-3">
-            <textarea id="profileAddress" placeholder="العنوان الكامل" class="w-full border rounded-xl p-3 mb-3" rows="2"></textarea>
-            <input type="tel" id="profileWhatsapp" placeholder="رقم واتساب أساسي *" class="w-full border rounded-xl p-3 mb-3">
-            <input type="tel" id="profileWhatsapp2" placeholder="رقم واتساب إضافي" class="w-full border rounded-xl p-3 mb-3">
-            <input type="tel" id="profilePhone" placeholder="رقم هاتف إضافي" class="w-full border rounded-xl p-3 mb-4">
-            <div class="flex gap-2"><button id="saveProfileBtn" class="bg-green-600 text-white flex-1 py-3 rounded-xl font-bold">💾 حفظ البيانات</button><button id="closeProfileModal" class="bg-gray-300 flex-1 py-3 rounded-xl">إلغاء</button></div>
-        </div>
+<!-- ===== التطبيق الرئيسي ===== -->
+<div id="appShell" style="display:none">
+  <!-- شريط الإعلانات المتحرك -->
+  <div id="adsTickerWrap">
+    <div id="adsTicker">🔥 مملكة التجار | تواصل مع آلاف التجار الآن 🔥</div>
+  </div>
+  <!-- الهيدر -->
+  <div id="topBar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:36px;height:36px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px">🛒</div>
+      <div>
+        <div style="font-weight:800;font-size:15px">مملكة التجار</div>
+        <div style="font-size:10px;color:#B2DFDB;margin-top:-1px" id="welcomeMsg">مرحباً</div>
+      </div>
     </div>
-
-    <!-- مودال إضافة منتج -->
-    <div id="productModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4 overflow-y-auto">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6">
-            <h2 class="text-2xl font-bold text-green-800 mb-4">➕ إضافة منتج جديد</h2>
-            <div class="mb-3"><label class="block text-sm font-bold text-gray-700 mb-1">📷 صورة المنتج</label><input type="file" id="prodImage" accept="image/*" class="w-full border rounded-xl p-2"><div id="imagePreview" class="mt-2 hidden"><img id="previewImg" class="w-24 h-24 rounded-xl object-cover border"></div></div>
-            <input type="text" id="prodName" placeholder="اسم المنتج" class="w-full border rounded-xl p-3 mb-3">
-            <div class="mb-3"><button id="aiGenerateBtn" class="bg-purple-600 text-white px-3 py-1 rounded-full text-sm">🤖 توليد وصف</button><textarea id="prodDesc" placeholder="وصف المنتج" class="w-full border rounded-xl p-3 mt-2" rows="3"></textarea></div>
-            <input type="text" id="prodPrice" placeholder="السعر (اختياري)" class="w-full border rounded-xl p-3 mb-4">
-            <div class="flex gap-2"><button id="submitProductBtn" class="bg-green-600 text-white flex-1 py-3 rounded-xl font-bold">📤 نشر</button><button id="closeProductModal" class="bg-gray-300 flex-1 py-3 rounded-xl">إلغاء</button></div>
-        </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="openAddProductBtn" style="display:none;background:#25D366;border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center" title="إضافة منتج">+</button>
+      <button id="topProfileBtn" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer">👤</button>
+      <button id="topAdminBtn" style="display:none;background:rgba(255,215,0,0.2);border:none;color:#FFD700;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer">👑</button>
+      <button id="logoutBtn" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:14px;cursor:pointer">🚪</button>
     </div>
-
-    <!-- مودال تعديل المنتج -->
-    <div id="editProductModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6">
-            <h2 class="text-xl font-bold text-green-800 mb-4">✏️ تعديل المنتج</h2>
-            <input type="hidden" id="editProductId"><input type="text" id="editName" placeholder="الاسم" class="w-full border rounded-xl p-2 mb-2"><textarea id="editDesc" placeholder="الوصف" class="w-full border rounded-xl p-2 mb-2" rows="2"></textarea><input type="text" id="editPrice" placeholder="السعر" class="w-full border rounded-xl p-2 mb-4">
-            <div class="flex gap-2"><button id="updateProductBtn" class="bg-blue-600 text-white flex-1 py-2 rounded-xl">💾 تحديث</button><button id="deleteProductBtn" class="bg-red-600 text-white flex-1 py-2 rounded-xl">🗑 حذف</button><button id="closeEditModal" class="bg-gray-300 flex-1 py-2 rounded-xl">إلغاء</button></div>
-        </div>
+  </div>
+  <!-- المحتوى الرئيسي -->
+  <div id="mainContent">
+    <!-- قسم المنتجات -->
+    <div id="secProducts" class="sec" style="padding:12px">
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input type="text" id="searchInput" class="field" placeholder="🔍 ابحث عن منتج..." style="flex:1;padding:10px 14px">
+        <button onclick="clearSearch()" style="background:#f0f0f0;border:none;border-radius:12px;padding:0 12px;cursor:pointer;font-size:16px">×</button>
+      </div>
+      <div id="productsGrid"></div>
     </div>
-
-    <!-- لوحة تحكم ADMIN -->
-    <div id="adminPanel" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 overflow-y-auto p-4">
-        <div class="max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl my-8">
-            <div class="bg-green-700 text-white p-4 rounded-t-3xl flex justify-between items-center"><h2 class="text-2xl font-bold">👑 لوحة تحكم المدير</h2><button id="closeAdminPanel" class="text-white text-3xl hover:text-red-300">×</button></div>
-            <div class="p-6">
-                <div class="bg-green-50 rounded-2xl p-4 mb-6"><h3 class="font-bold text-lg text-green-800 mb-3">➕ إضافة تاجر جديد</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-3"><input type="text" id="adminName" placeholder="الاسم الكامل" class="border rounded-xl p-2"><input type="tel" id="adminPhone" placeholder="رقم الموبايل" class="border rounded-xl p-2"><input type="text" id="adminStore" placeholder="اسم المحل" class="border rounded-xl p-2"><input type="text" id="adminPassword" placeholder="كلمة السر" class="border rounded-xl p-2" value="mkt123"></div><button id="addUserBtn" class="mt-3 bg-green-600 text-white px-6 py-2 rounded-xl font-bold">➕ إضافة التاجر</button></div>
-                <div class="bg-yellow-50 rounded-2xl p-4 mb-6"><h3 class="font-bold text-lg text-yellow-800 mb-3">📝 طلبات تسجيل جديدة</h3><div id="requestsList" class="space-y-2 max-h-60 overflow-y-auto"><div class="text-gray-500 text-center py-4">جاري التحميل...</div></div></div>
-                <div class="bg-blue-50 rounded-2xl p-4"><h3 class="font-bold text-lg text-blue-800 mb-3">📋 التجار المسجلين</h3><div id="usersList" class="space-y-2 max-h-80 overflow-y-auto"><div class="text-gray-500 text-center py-4">جاري التحميل...</div></div></div>
-            </div>
+    <!-- قسم الإعلانات -->
+    <div id="secAds" class="sec" style="display:none">
+      <div id="adSlideScreen">
+        <div class="ad-progress"><div class="ad-progress-fill" id="adProgressFill"></div></div>
+        <div id="adImageArea"></div>
+        <div class="ad-counter" id="adCounter">1/1</div>
+        <div class="ad-body">
+          <p style="font-size:18px;font-weight:800;color:#fff;margin:0 0 4px" id="adName">...</p>
+          <p style="font-size:22px;font-weight:700;color:#25D366;margin:0 0 4px" id="adPrice"></p>
+          <p style="font-size:12px;color:#aaa;margin:0 0 10px" id="adStore"></p>
+          <p style="font-size:13px;color:#ccc;line-height:1.7;background:rgba(255,255,255,0.05);border-right:2px solid #25D366;border-radius:8px;padding:10px;margin:0 0 10px" id="adPromo">🤖 جارٍ التوليد...</p>
+          <a id="adWhatsappLink" href="#" target="_blank" style="display:inline-block;background:#25D366;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:700;text-decoration:none">📲 تواصل على واتساب</a>
         </div>
+        <!-- تحكم الإعلانات -->
+        <div style="display:flex;justify-content:center;gap:12px;padding:12px;background:#000">
+          <button onclick="prevAd()" style="background:#222;color:#fff;border:none;padding:8px 18px;border-radius:99px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px">◀</button>
+          <button id="adPauseBtn" onclick="toggleAdPause()" style="background:#222;color:#fff;border:none;padding:8px 18px;border-radius:99px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px">⏸</button>
+          <button onclick="nextAd()" style="background:#222;color:#fff;border:none;padding:8px 18px;border-radius:99px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px">▶</button>
+        </div>
+      </div>
     </div>
+    <!-- قسم المخزن (تجار فقط) -->
+    <div id="secInventory" class="sec" style="display:none;padding:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="font-size:16px;font-weight:800;color:#075E54;margin:0">📦 مخزني</h2>
+        <div style="display:flex;gap:6px">
+          <label style="background:#25D366;color:#fff;padding:7px 12px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">
+            📊 استيراد Excel
+            <input type="file" id="excelImport" accept=".xlsx,.xls,.csv" style="display:none">
+          </label>
+        </div>
+      </div>
+      <div id="inventoryList"></div>
+    </div>
+    <!-- قسم التبرعات -->
+    <div id="secDonations" class="sec" style="display:none;padding:12px">
+      <div style="background:linear-gradient(135deg,#c0392b,#e74c3c);border-radius:16px;padding:16px;color:#fff;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h2 style="font-size:16px;font-weight:800;margin:0 0 2px">❤️ منصة التبرعات</h2>
+            <p style="font-size:11px;opacity:0.8;margin:0">ساعد زميلك التاجر</p>
+          </div>
+          <button id="openNewDonationBtn" style="background:#fff;color:#c0392b;border:none;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;font-family:'Cairo',sans-serif">+ نشر حالة</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px">
+          <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:900" id="dStatCases">0</div><div style="font-size:10px;opacity:0.8">حالة</div></div>
+          <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:900" id="dStatDonors">0</div><div style="font-size:10px;opacity:0.8">متبرع</div></div>
+          <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:900" id="dStatAmount">0</div><div style="font-size:10px;opacity:0.8">ج.م</div></div>
+        </div>
+      </div>
+      <div id="donationsList"></div>
+    </div>
+    <!-- قسم الشات -->
+    <div id="secChat" class="sec" style="display:none;display:flex;flex-direction:column;height:calc(100vh - 170px)">
+      <div style="background:#075E54;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-weight:700;font-size:14px">💬 المجموعة العامة</div>
+          <div style="font-size:11px;color:#B2DFDB" id="onlineCount">...</div>
+        </div>
+        <button id="clearAllMsgsBtn" style="display:none;background:rgba(255,0,0,0.3);color:#fff;border:none;padding:5px 10px;border-radius:8px;font-size:11px;cursor:pointer;font-family:'Cairo',sans-serif">🗑 مسح</button>
+      </div>
+      <div id="chatMessages" style="flex:1;overflow-y:auto;padding:10px;background:#ECE5DD;min-height:0"></div>
+      <div style="background:#fff;padding:8px 10px;display:flex;gap:6px;align-items:center;border-top:1px solid #e0e0e0">
+        <button id="emojiBtn" style="background:none;border:none;font-size:22px;cursor:pointer;padding:4px">😊</button>
+        <button id="attachImageBtn" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px">📷</button>
+        <button id="voiceRecordBtn" class="record-btn" style="background:#f0f0f0;border:none;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer">🎤</button>
+        <input type="text" id="chatInput" class="field" placeholder="اكتب رسالة..." style="flex:1;padding:8px 14px;font-size:13px">
+        <button id="sendChatBtn" style="background:#075E54;border:none;color:#fff;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer">➤</button>
+      </div>
+    </div>
+  </div>
+  <!-- شريط التنقل السفلي -->
+  <div id="bottomNav">
+    <button class="nav-item active" id="nav-products" onclick="window.switchSection('products')">
+      <span class="nav-icon">🛍️</span>منتجات
+    </button>
+    <button class="nav-item" id="nav-ads" onclick="window.switchSection('ads')">
+      <span class="nav-icon">📺</span>إعلانات
+    </button>
+    <button class="nav-item" id="nav-inventory" onclick="window.switchSection('inventory')" style="display:none" id="nav-inventory">
+      <span class="nav-icon">📦</span>مخزني
+    </button>
+    <button class="nav-item" id="nav-donations" onclick="window.switchSection('donations')">
+      <span class="nav-icon">❤️</span>تبرعات
+    </button>
+    <button class="nav-item" id="nav-chat" onclick="window.switchSection('chat')">
+      <span class="nav-icon">💬</span>شات
+      <span class="nav-badge" id="chatBadge" style="display:none">0</span>
+    </button>
+  </div>
+</div>
 
-    <script>
-        // ====================== Firebase Config ======================
-        const firebaseConfig = {
-            apiKey: "AIzaSyC7eeoGULzuYKNV5dbWSp6CnWoilf7LsxE",
-            authDomain: "mamlakat-eltogar.firebaseapp.com",
-            databaseURL: "https://mamlakat-eltogar-default-rtdb.firebaseio.com",
-            projectId: "mamlakat-eltogar",
-            storageBucket: "mamlakat-eltogar.firebasestorage.app",
-            appId: "1:331178086888:web:e555e5a5f1b11dff01145d"
+<!-- ===== مودال طلب التسجيل ===== -->
+<div id="requestModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h3 style="font-size:16px;font-weight:800;margin:0">📝 طلب تسجيل تاجر</h3>
+      <button onclick="closeModal('requestModal')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:10px">
+      <p style="font-size:12px;color:#999;margin:0">سيصلك الرد على واتساب بعد موافقة المدير</p>
+      <input type="text" id="reqName" class="field" placeholder="الاسم كامل *">
+      <input type="tel" id="reqPhone" class="field" placeholder="رقم الموبايل *" dir="ltr">
+      <input type="text" id="reqStore" class="field" placeholder="اسم المحل (اختياري)">
+      <input type="text" id="reqAddress" class="field" placeholder="العنوان">
+      <button class="btn-primary" id="submitRequestBtn">📤 إرسال الطلب</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== مودال إضافة منتج ===== -->
+<div id="productModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h3 style="font-size:16px;font-weight:800;margin:0">➕ إضافة منتج</h3>
+      <button onclick="closeModal('productModal')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:10px">
+      <!-- صورة -->
+      <div>
+        <div id="prodImgPreview" style="display:none;margin-bottom:8px"><img id="previewImg" style="width:100%;height:160px;object-fit:cover;border-radius:12px;border:2px solid #e0e0e0"></div>
+        <label style="display:flex;align-items:center;gap:10px;background:#f8f8f8;border:2px dashed #ddd;border-radius:12px;padding:12px;cursor:pointer;justify-content:center">
+          <span style="font-size:24px">📷</span>
+          <span style="font-size:13px;color:#666">اضغط لاختيار صورة</span>
+          <input type="file" id="prodImage" accept="image/*" style="display:none">
+        </label>
+      </div>
+      <!-- اسم المنتج + AI -->
+      <div>
+        <label class="field-label">اسم المنتج *</label>
+        <input type="text" id="prodName" class="field" placeholder="مثال: آيفون 15 برو">
+      </div>
+      <!-- وصف + AI -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+          <label class="field-label" style="margin:0">الوصف الترويجي</label>
+          <button id="aiGenBtn" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif">🤖 توليد بـ AI</button>
+        </div>
+        <textarea id="prodDesc" class="field" placeholder="وصف المنتج..." rows="2" style="resize:none"></textarea>
+      </div>
+      <!-- سعر -->
+      <div>
+        <label class="field-label">السعر (يُرى للتجار فقط)</label>
+        <input type="text" id="prodPrice" class="field" placeholder="مثال: 500 ج.م">
+      </div>
+      <!-- واتساب - يُقرأ تلقائياً -->
+      <div style="background:#f0fdf4;border-radius:12px;padding:12px;border:1px solid #bbf7d0">
+        <label class="field-label" style="color:#15803d">📱 أرقام التواصل (من ملفك تلقائياً)</label>
+        <input type="tel" id="prodWa1" class="field" placeholder="رقم واتساب أساسي *" dir="ltr" style="margin-bottom:6px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <input type="tel" id="prodWa2" class="field" placeholder="رقم احتياطي 1" dir="ltr">
+          <input type="tel" id="prodWa3" class="field" placeholder="رقم احتياطي 2" dir="ltr">
+        </div>
+      </div>
+      <!-- عنوان المحل -->
+      <div>
+        <label class="field-label">📍 عنوان المحل (من ملفك تلقائياً)</label>
+        <input type="text" id="prodStoreAddress" class="field" placeholder="شارع / مدينة">
+      </div>
+      <div style="background:#fffbeb;border-radius:10px;padding:10px;font-size:11px;color:#92400e;border:1px solid #fde68a">
+        ⏰ يظهر في الإعلانات <b>48 ساعة</b> فقط ثم يختفي تلقائياً — لكن يبقى في مخزنك دائماً
+      </div>
+      <button class="btn-primary" id="submitProductBtn">📤 نشر المنتج</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== مودال تعديل منتج ===== -->
+<div id="editProductModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h3 style="font-size:16px;font-weight:800;margin:0;color:#2563eb">✏️ تعديل المنتج</h3>
+      <button onclick="closeModal('editProductModal')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:10px">
+      <input type="hidden" id="editId">
+      <!-- صورة -->
+      <div id="editImgPreview" style="display:none;margin-bottom:4px"><img id="editPreviewImg" style="width:100%;height:140px;object-fit:cover;border-radius:12px"></div>
+      <label style="display:flex;align-items:center;gap:8px;background:#f8f8f8;border:2px dashed #ddd;border-radius:12px;padding:10px;cursor:pointer;justify-content:center">
+        <span>📷</span><span style="font-size:12px;color:#666">تغيير الصورة</span>
+        <input type="file" id="editImage" accept="image/*" style="display:none">
+      </label>
+      <input type="text" id="editName" class="field" placeholder="اسم المنتج">
+      <textarea id="editDesc" class="field" placeholder="الوصف" rows="2" style="resize:none"></textarea>
+      <input type="text" id="editPrice" class="field" placeholder="السعر">
+      <input type="text" id="editAddress" class="field" placeholder="العنوان">
+      <input type="tel" id="editWa1" class="field" placeholder="واتساب أساسي" dir="ltr">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <input type="tel" id="editWa2" class="field" placeholder="احتياطي 1" dir="ltr">
+        <input type="tel" id="editWa3" class="field" placeholder="احتياطي 2" dir="ltr">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="btn-primary" id="updateProductBtn" style="background:#2563eb">💾 تحديث</button>
+        <button class="btn-danger" id="deleteProductBtn" style="width:100%;padding:13px;border-radius:12px;font-size:14px">🗑 حذف</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== مودال الملف الشخصي ===== -->
+<div id="profileModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h3 style="font-size:16px;font-weight:800;margin:0">👤 بيانات متجري</h3>
+      <button onclick="closeModal('profileModal')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:10px">
+      <p style="font-size:12px;color:#999;margin:0">تظهر تلقائياً في كل منتج تضيفه</p>
+      <input type="text" id="profileStore" class="field" placeholder="اسم المحل *">
+      <textarea id="profileAddress" class="field" placeholder="العنوان الكامل" rows="2" style="resize:none"></textarea>
+      <input type="tel" id="profileWa1" class="field" placeholder="واتساب أساسي *" dir="ltr">
+      <input type="tel" id="profileWa2" class="field" placeholder="واتساب احتياطي 1" dir="ltr">
+      <input type="tel" id="profileWa3" class="field" placeholder="واتساب احتياطي 2" dir="ltr">
+      <button class="btn-primary" id="saveProfileBtn">💾 حفظ البيانات</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== مودال لوحة تحكم المدير ===== -->
+<div id="adminModal" class="modal-overlay">
+  <div class="modal-sheet" style="max-height:95vh">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h3 style="font-size:16px;font-weight:800;margin:0;color:#7c3aed">👑 لوحة التحكم</h3>
+      <button onclick="closeModal('adminModal')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div class="modal-body" style="padding:12px">
+      <!-- تبويبات -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px">
+        <button onclick="window.adminTab('users')" id="atab-users" class="btn-sm" style="background:#075E54;color:#fff;white-space:nowrap">👥 التجار</button>
+        <button onclick="window.adminTab('requests')" id="atab-requests" class="btn-sm" style="background:#f0f0f0;color:#333;white-space:nowrap">📝 الطلبات</button>
+        <button onclick="window.adminTab('products')" id="atab-products" class="btn-sm" style="background:#f0f0f0;color:#333;white-space:nowrap">🛍️ المنتجات</button>
+        <button onclick="window.adminTab('manage')" id="atab-manage" class="btn-sm" style="background:#f0f0f0;color:#333;white-space:nowrap">⚙️ الإدارة</button>
+      </div>
+      <!-- التجار -->
+      <div id="apanel-users">
+        <div style="background:#f0fdf4;border-radius:12px;padding:12px;margin-bottom:12px">
+          <p style="font-weight:700;font-size:13px;margin:0 0 8px;color:#15803d">➕ إضافة تاجر</p>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <input type="text" id="adminName" class="field" placeholder="الاسم">
+            <input type="tel" id="adminPhone" class="field" placeholder="رقم الموبايل" dir="ltr">
+            <input type="text" id="adminStore" class="field" placeholder="اسم المحل">
+            <input type="text" id="adminPassword" class="field" placeholder="كلمة السر" value="mkt123">
+            <button class="btn-primary" id="addUserBtn" style="background:#15803d">➕ إضافة</button>
+          </div>
+        </div>
+        <div id="usersList" style="max-height:300px;overflow-y:auto"></div>
+      </div>
+      <!-- الطلبات -->
+      <div id="apanel-requests" style="display:none">
+        <div id="requestsList" style="max-height:400px;overflow-y:auto"></div>
+      </div>
+      <!-- المنتجات -->
+      <div id="apanel-products" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <p style="font-weight:700;font-size:13px;margin:0">جميع المنتجات</p>
+          <button onclick="adminClearProducts()" class="btn-sm" style="background:#ff4444;color:#fff">🗑 مسح الكل</button>
+        </div>
+        <div id="adminProductsList" style="max-height:400px;overflow-y:auto"></div>
+      </div>
+      <!-- الإدارة -->
+      <div id="apanel-manage" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+          <button onclick="adminClearChat()" class="btn-sm" style="background:#ff4444;color:#fff;padding:12px">🗑 مسح الرسائل</button>
+          <button onclick="adminClearDonations()" class="btn-sm" style="background:#e91e63;color:#fff;padding:12px">🗑 مسح التبرعات</button>
+          <button onclick="adminClearProducts()" class="btn-sm" style="background:#ff9800;color:#fff;padding:12px">🗑 مسح المنتجات</button>
+          <button onclick="loadAdminStats()" class="btn-sm" style="background:#2196F3;color:#fff;padding:12px">📊 الإحصائيات</button>
+        </div>
+        <div id="adminStats" style="background:#f8f8f8;border-radius:10px;padding:12px;font-size:12px;color:#555"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== مودال نشر حالة تبرع ===== -->
+<div id="donationModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h3 style="font-size:16px;font-weight:800;margin:0;color:#c0392b">❤️ نشر حالة احتياج</h3>
+      <button onclick="closeModal('donationModal')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:10px">
+      <div id="donImgPreview" style="display:none"><img id="donImgPrev" style="width:100%;height:140px;object-fit:cover;border-radius:12px"></div>
+      <label style="display:flex;align-items:center;gap:8px;background:#f8f8f8;border:2px dashed #ddd;border-radius:12px;padding:10px;cursor:pointer;justify-content:center">
+        <span>📷</span><span style="font-size:12px;color:#666">صورة توضيحية</span>
+        <input type="file" id="donationImage" accept="image/*" style="display:none">
+      </label>
+      <input type="text" id="donTitle" class="field" placeholder="عنوان الحالة *">
+      <textarea id="donDesc" class="field" placeholder="اشرح وضعك..." rows="3" style="resize:none"></textarea>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><label class="field-label">المبلغ المطلوب (ج.م)</label><input type="number" id="donTarget" class="field" placeholder="مثال: 5000"></div>
+        <div><label class="field-label">رقم المحفظة</label><input type="tel" id="donWallet" class="field" placeholder="01xxxxxxxx" dir="ltr"></div>
+      </div>
+      <input type="text" id="donPayMethods" class="field" placeholder="طرق الدفع: فودافون كاش / إنستاباي...">
+      <button class="btn-primary" id="submitDonationBtn" style="background:#c0392b">📤 نشر الحالة</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== مودال التبرع ===== -->
+<div id="donateNowModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h3 style="font-size:16px;font-weight:800;margin:0;color:#15803d">💚 تبرع الآن</h3>
+      <button onclick="closeModal('donateNowModal')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:10px">
+      <input type="hidden" id="donateCaseId">
+      <div id="donateModalInfo" style="background:#f0fdf4;border-radius:12px;padding:12px;font-size:13px"></div>
+      <div><label class="field-label">المبلغ (ج.م) *</label><input type="number" id="donateAmount" class="field" placeholder="أدخل المبلغ" style="font-size:20px;font-weight:700;text-align:center"></div>
+      <div id="donReceiptPreview" style="display:none"><img id="donReceiptImg" style="width:100%;height:100px;object-fit:cover;border-radius:10px"></div>
+      <label style="display:flex;align-items:center;gap:8px;background:#f8f8f8;border:2px dashed #ddd;border-radius:12px;padding:10px;cursor:pointer;justify-content:center">
+        <span>📷</span><span style="font-size:12px;color:#666">صورة الإيصال (اختياري)</span>
+        <input type="file" id="donateReceipt" accept="image/*" style="display:none">
+      </label>
+      <input type="text" id="donateNote" class="field" placeholder="ملاحظة (اختياري)">
+      <button class="btn-primary" id="submitDonateBtn" style="background:#15803d">❤️ تأكيد التبرع</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.onerror = function(msg, src, line, col, err) {
+    console.error('JS Error:', msg, 'Line:', line, 'Col:', col);
+    return false;
+};
+// ===== Firebase Config =====
+const firebaseConfig = {
+  apiKey: "AIzaSyDmfLeT03RbX56IooxaifeLqwiwRImde34",
+  authDomain: "mamlakat-eltogar-844d1.firebaseapp.com",
+  databaseURL: "https://mamlakat-eltogar-844d1-default-rtdb.firebaseio.com",
+  projectId: "mamlakat-eltogar-844d1",
+  storageBucket: "mamlakat-eltogar-844d1.firebasestorage.app",
+  messagingSenderId: "540275797863",
+  appId: "1:540275797863:web:ac5e0b810050fcb06549c2"
+};
+const CLOUDINARY_CLOUD = "dfufqyxew";
+const CLOUDINARY_PRESET = "ml_default";
+const ADMIN_PHONE = "01022495795";
+const ADMIN_WA = "201022495795";
+const AD_DURATION = 48 * 3600 * 1000;
+const AD_INTERVAL = 5000;
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ===== State =====
+let currentUser = null, currentPhone = null, isAdmin = false, isMerchant = false;
+let allProducts = [], adList = [], adIdx = 0, adTimer = null, adPaused = false;
+let promoCache = {}, editImageFile = null, newProductImageFile = null;
+let donImgFile = null, donReceiptFile = null;
+let mediaRecorder = null, audioChunks = [], isRecording = false;
+let currentSection = 'products';
+let userType = 'merchant'; // merchant or customer
+
+// ===== DB Helpers =====
+const dbGet = (path) => db.ref(path).once('value').then(s => s.val());
+const dbSet = (path, val) => db.ref(path).set(val);
+const dbUpdate = (path, val) => db.ref(path).update(val);
+const dbPush = (path, val) => db.ref(path).push(val);
+const dbRemove = (path) => db.ref(path).remove();
+const dbListen = (path, cb, opts={}) => {
+  const ref = opts.orderBy ? db.ref(path).orderByChild(opts.orderBy).limitToLast(opts.limit||100)
+              : db.ref(path);
+  ref.on('value', cb);
+};
+
+// ===== تحويل صورة مضغوطة =====
+function compressImage(file, maxSize=800, quality=0.75) {
+  return new Promise((res, rej) => {
+    const img = new Image(), reader = new FileReader();
+    reader.onload = e => {
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; }
+        if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        res(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = rej;
+      img.src = e.target.result;
+    };
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadImage(file) {
+  // جرب Cloudinary أولاً
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_PRESET);
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {method:'POST',body:fd});
+    const d = await r.json();
+    if (d.secure_url) return d.secure_url;
+  } catch(e) {}
+  // fallback: base64 مضغوط
+  return await compressImage(file);
+}
+
+// ===== نوع المستخدم =====
+window.setUserType = function(type) {
+  userType = type;
+  document.getElementById('typemerchant').style.background = type === 'merchant' ? '#075E54' : 'transparent';
+  document.getElementById('typemerchant').style.color = type === 'merchant' ? '#fff' : '#666';
+  document.getElementById('typecustomer').style.background = type === 'customer' ? '#075E54' : 'transparent';
+  document.getElementById('typecustomer').style.color = type === 'customer' ? '#fff' : '#666';
+  document.getElementById('passwordRow').style.display = type === 'merchant' ? 'flex' : 'none';
+  document.getElementById('passwordRow').style.flexDirection = 'column';
+  document.getElementById('passwordRow').style.gap = '10px';
+  document.getElementById('customerNameRow').style.display = type === 'customer' ? 'block' : 'none';
+  document.getElementById('loginPhone').placeholder = type === 'merchant' ? 'رقم الموبايل' : 'رقم موبايلك (للمتابعة)';
+}
+
+// ===== تسجيل الدخول =====
+async function initAdmin() {
+  try {
+    const snap = await dbGet(`users/${ADMIN_PHONE}`);
+    if (!snap) {
+      await dbSet(`users/${ADMIN_PHONE}`, {
+        name:'المدير العام', storeName:'مملكة التجار',
+        password:'1234', active:true, isAdmin:true,
+        type:'merchant', createdAt: Date.now()
+      });
+    }
+  } catch(e) {}
+}
+initAdmin();
+
+document.getElementById('doLoginBtn').onclick = async () => {
+  const phone = document.getElementById('loginPhone').value.trim();
+  const btn = document.getElementById('doLoginBtn');
+
+  if (userType === 'customer') {
+    // دخول عميل مباشر
+    const name = document.getElementById('customerName').value.trim() || 'عميل';
+    currentPhone = phone || 'customer_' + Date.now();
+    currentUser = { name, type: 'customer', active: true };
+    isMerchant = false; isAdmin = false;
+    localStorage.setItem('mkt_phone', currentPhone);
+    localStorage.setItem('mkt_type', 'customer');
+    localStorage.setItem('mkt_name', name);
+    startApp();
+    return;
+  }
+
+  // تاجر
+  const pass = document.getElementById('loginPassword').value.trim();
+  if (!phone || !pass) { alert('أدخل الرقم وكلمة السر'); return; }
+  btn.disabled = true; btn.textContent = '⏳ جارٍ التحقق...';
+  try {
+    const user = await dbGet(`users/${phone}`);
+    if (user && user.password === pass && user.active) {
+      currentPhone = phone; currentUser = user;
+      isMerchant = true; isAdmin = phone === ADMIN_PHONE;
+      localStorage.setItem('mkt_phone', phone);
+      localStorage.setItem('mkt_type', 'merchant');
+      startApp();
+    } else {
+      alert('❌ رقم أو كلمة سر غير صحيحة');
+    }
+  } catch(e) { alert('❌ خطأ في الاتصال. تحقق من الإنترنت'); }
+  btn.disabled = false; btn.textContent = '🚪 دخول';
+};
+
+function startApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'flex';
+  document.getElementById('welcomeMsg').textContent = `${currentUser.name || 'مرحباً'} ${isAdmin ? '👑' : isMerchant ? '🏪' : '🛍️'}`;
+
+  // إظهار/إخفاء حسب النوع
+  if (isMerchant) {
+    document.getElementById('openAddProductBtn').style.display = 'flex';
+    document.getElementById('nav-inventory').style.display = 'flex';
+    if (isAdmin) document.getElementById('topAdminBtn').style.display = 'flex';
+    // مسح الرسائل للمدير
+    if (isAdmin) document.getElementById('clearAllMsgsBtn').style.display = 'block';
+  } else {
+    // عميل: مخزن مخفي
+    document.getElementById('nav-inventory').style.display = 'none';
+  }
+
+  loadProducts();
+  loadAdsBar();
+  trackPresence();
+  loadDonations();
+  resumeSession();
+}
+
+function resumeSession() {
+  const saved = localStorage.getItem('mkt_phone');
+  const savedType = localStorage.getItem('mkt_type');
+  if (saved && savedType === 'customer') {
+    const name = localStorage.getItem('mkt_name') || 'عميل';
+    currentPhone = saved; currentUser = { name, type:'customer', active:true };
+    isMerchant = false; isAdmin = false;
+    startApp();
+  } else if (saved && savedType === 'merchant') {
+    dbGet(`users/${saved}`).then(user => {
+      if (user && user.active) {
+        currentPhone = saved; currentUser = user;
+        isMerchant = true; isAdmin = saved === ADMIN_PHONE;
+        startApp();
+      } else localStorage.removeItem('mkt_phone');
+    });
+  }
+}
+
+// ===== التنقل =====
+window.switchSection = function(sec) {
+  document.querySelectorAll('.sec').forEach(s => s.style.display = 'none');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  currentSection = sec;
+  const el = document.getElementById('sec' + sec.charAt(0).toUpperCase() + sec.slice(1));
+  if (el) el.style.display = sec === 'chat' ? 'flex' : (sec === 'ads' ? 'block' : 'block');
+  const nav = document.getElementById('nav-' + sec);
+  if (nav) nav.classList.add('active');
+  if (sec === 'ads') startAdsSlideshow();
+  if (sec === 'chat') { loadChat(); document.getElementById('chatBadge').style.display = 'none'; }
+  if (sec === 'inventory') loadInventory();
+  if (sec === 'donations') loadDonations();
+}
+
+// ===== المنتجات =====
+function loadProducts() {
+  db.ref('products').orderByChild('timestamp').limitToLast(100).on('value', snap => {
+    allProducts = [];
+    snap.forEach(c => allProducts.unshift({...c.val(), _key: c.key}));
+    renderProducts(allProducts);
+  });
+}
+
+function renderProducts(list) {
+  const grid = document.getElementById('productsGrid');
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  let filtered = q ? list.filter(p =>
+    (p.name||'').toLowerCase().includes(q) ||
+    (p.storeName||'').toLowerCase().includes(q) ||
+    (p.storeAddress||'').toLowerCase().includes(q) ||
+    (p.desc||'').toLowerCase().includes(q)
+  ) : list;
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div style="text-align:center;padding:40px;color:#999"><div style="font-size:40px">🔍</div><p>لا توجد نتائج</p></div>`;
+    return;
+  }
+
+  const now = Date.now();
+  grid.innerHTML = filtered.map(p => {
+    const isOwner = isMerchant && (p.userPhone === currentPhone || isAdmin);
+    const inAds = (now - p.timestamp) < AD_DURATION;
+    const remH = Math.max(0, Math.round((p.timestamp + AD_DURATION - now) / 3600000));
+    const wa = (p.whatsapp || p.wa1 || '').replace(/[^0-9]/g,'');
+    const waLink = wa ? `https://wa.me/2${wa}` : '#';
+    return `
+    <div class="product-card">
+      ${p.imageUrl
+        ? `<img src="${p.imageUrl}" class="product-img" loading="lazy">`
+        : `<div class="product-img-placeholder">🛒</div>`}
+      <div style="padding:10px 12px">
+        ${inAds ? `<span style="background:#dcfce7;color:#15803d;font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700">📺 في الإعلانات · ${remH}س</span>` : ''}
+        <h3 style="font-size:15px;font-weight:800;margin:6px 0 3px;color:#1a1a1a">${p.name||''}</h3>
+        ${p.desc ? `<p style="font-size:12px;color:#666;margin:0 0 6px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${p.desc}</p>` : ''}
+        ${isMerchant && p.price ? `<p style="font-size:16px;font-weight:800;color:#075E54;margin:0 0 4px">💰 ${p.price}</p>` : ''}
+        <p style="font-size:11px;color:#888;margin:0 0 8px">🏪 ${p.storeName||''} ${p.storeAddress ? '· 📍'+p.storeAddress : ''}</p>
+        <div style="display:flex;gap:6px">
+          ${wa ? `<a href="${waLink}" target="_blank" style="flex:1;background:#25D366;color:#fff;padding:8px;border-radius:10px;font-size:12px;font-weight:700;text-align:center;text-decoration:none">📲 واتساب</a>` : ''}
+          ${p.wa2 ? `<a href="https://wa.me/2${p.wa2.replace(/[^0-9]/g,'')}" target="_blank" style="background:#128C7E;color:#fff;padding:8px 10px;border-radius:10px;font-size:11px;font-weight:700;text-decoration:none">2</a>` : ''}
+          ${isOwner ? `<button onclick="openEditProduct('${p.id||p._key}')" style="background:#EFF6FF;color:#2563eb;border:none;padding:8px 12px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif">✏️</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('searchInput').addEventListener('input', () => renderProducts(allProducts));
+window.clearSearch = function() { document.getElementById('searchInput').value = ''; renderProducts(allProducts); }
+
+// ===== إضافة منتج =====
+async function loadProfileIntoForm() {
+  if (!currentPhone) return;
+  try {
+    const p = await dbGet(`profiles/${currentPhone}`);
+    if (p) {
+      document.getElementById('prodWa1').value = p.wa1 || '';
+      document.getElementById('prodWa2').value = p.wa2 || '';
+      document.getElementById('prodWa3').value = p.wa3 || '';
+      document.getElementById('prodStoreAddress').value = p.address || '';
+    } else {
+      document.getElementById('prodWa1').value = currentPhone || '';
+    }
+  } catch(e) {}
+}
+
+document.getElementById('openAddProductBtn').onclick = () => {
+  openModal('productModal');
+  loadProfileIntoForm();
+  newProductImageFile = null;
+  document.getElementById('prodImgPreview').style.display = 'none';
+  document.getElementById('prodName').value = '';
+  document.getElementById('prodDesc').value = '';
+  document.getElementById('prodPrice').value = '';
+};
+
+document.getElementById('prodImage').onchange = async e => {
+  if (e.target.files[0]) {
+    newProductImageFile = e.target.files[0];
+    const b64 = await compressImage(e.target.files[0]);
+    document.getElementById('previewImg').src = b64;
+    document.getElementById('prodImgPreview').style.display = 'block';
+  }
+};
+
+document.getElementById('aiGenBtn').onclick = async () => {
+  const name = document.getElementById('prodName').value.trim();
+  if (!name) { alert('اكتب اسم المنتج أولاً'); return; }
+  const btn = document.getElementById('aiGenBtn');
+  btn.textContent = '⏳'; btn.disabled = true;
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:80,
+        messages:[{role:'user', content:`اكتب جملتين ترويجيتين قصيرتين وجذابتين بالعربية لمنتج اسمه "${name}". الجملتان فقط.`}]
+      })
+    });
+    const d = await r.json();
+    document.getElementById('prodDesc').value = d.content?.[0]?.text?.trim() || `🔥 ${name} — جودة لا مثيل لها!`;
+  } catch(e) {
+    document.getElementById('prodDesc').value = `🔥 ${name} — جودة عالية وسعر ممتاز! تواصل معنا الآن.`;
+  }
+  btn.textContent = '🤖 توليد بـ AI'; btn.disabled = false;
+};
+
+document.getElementById('submitProductBtn').onclick = async () => {
+  const name = document.getElementById('prodName').value.trim();
+  if (!name) { alert('اسم المنتج مطلوب'); return; }
+  const btn = document.getElementById('submitProductBtn');
+  btn.disabled = true; btn.textContent = '⏳ جارٍ النشر...';
+
+  try {
+    const profile = await dbGet(`profiles/${currentPhone}`) || {};
+    let imageUrl = null;
+    if (newProductImageFile) imageUrl = await uploadImage(newProductImageFile);
+
+    const product = {
+      id: '', name,
+      desc: document.getElementById('prodDesc').value.trim(),
+      price: document.getElementById('prodPrice').value.trim() || 'اتصل للسعر',
+      wa1: document.getElementById('prodWa1').value.trim() || currentPhone,
+      wa2: document.getElementById('prodWa2').value.trim(),
+      wa3: document.getElementById('prodWa3').value.trim(),
+      whatsapp: document.getElementById('prodWa1').value.trim() || currentPhone,
+      storeAddress: document.getElementById('prodStoreAddress').value.trim() || profile.address || '',
+      storeName: profile.storeName || currentUser?.storeName || currentUser?.name || 'متجر',
+      userPhone: currentPhone,
+      imageUrl, timestamp: Date.now()
+    };
+    const ref = await dbPush('products', product);
+    await db.ref(`products/${ref.key}/id`).set(ref.key);
+    // حفظ في مخزن التاجر
+    await db.ref(`inventory/${currentPhone}/${ref.key}`).set({...product, id: ref.key});
+
+    closeModal('productModal');
+    alert('✅ تم نشر المنتج في الإعلانات لمدة 48 ساعة وحُفظ في مخزنك');
+  } catch(e) { alert('❌ خطأ: ' + e.message); }
+  btn.disabled = false; btn.textContent = '📤 نشر المنتج';
+};
+
+// ===== تعديل المنتج =====
+window.openEditProduct = async (id) => {
+  const p = allProducts.find(x => x.id === id || x._key === id);
+  if (!p) return;
+  document.getElementById('editId').value = id;
+  document.getElementById('editName').value = p.name || '';
+  document.getElementById('editDesc').value = p.desc || '';
+  document.getElementById('editPrice').value = p.price || '';
+  document.getElementById('editAddress').value = p.storeAddress || '';
+  document.getElementById('editWa1').value = p.wa1 || p.whatsapp || '';
+  document.getElementById('editWa2').value = p.wa2 || '';
+  document.getElementById('editWa3').value = p.wa3 || '';
+  if (p.imageUrl) {
+    document.getElementById('editPreviewImg').src = p.imageUrl;
+    document.getElementById('editImgPreview').style.display = 'block';
+  } else { document.getElementById('editImgPreview').style.display = 'none'; }
+  editImageFile = null;
+  openModal('editProductModal');
+};
+
+document.getElementById('editImage').onchange = async e => {
+  if (e.target.files[0]) {
+    editImageFile = e.target.files[0];
+    const b64 = await compressImage(e.target.files[0]);
+    document.getElementById('editPreviewImg').src = b64;
+    document.getElementById('editImgPreview').style.display = 'block';
+  }
+};
+
+document.getElementById('updateProductBtn').onclick = async () => {
+  const id = document.getElementById('editId').value;
+  if (!id) return;
+  const btn = document.getElementById('updateProductBtn');
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    let imageUrl = undefined;
+    if (editImageFile) imageUrl = await uploadImage(editImageFile);
+    const updates = {
+      name: document.getElementById('editName').value,
+      desc: document.getElementById('editDesc').value,
+      price: document.getElementById('editPrice').value,
+      storeAddress: document.getElementById('editAddress').value,
+      wa1: document.getElementById('editWa1').value,
+      wa2: document.getElementById('editWa2').value,
+      wa3: document.getElementById('editWa3').value,
+      whatsapp: document.getElementById('editWa1').value,
+    };
+    if (imageUrl) updates.imageUrl = imageUrl;
+    await dbUpdate(`products/${id}`, updates);
+    await dbUpdate(`inventory/${currentPhone}/${id}`, updates);
+    closeModal('editProductModal');
+    alert('✅ تم التحديث');
+  } catch(e) { alert('❌ خطأ'); }
+  btn.disabled = false; btn.textContent = '💾 تحديث';
+};
+
+document.getElementById('deleteProductBtn').onclick = async () => {
+  const id = document.getElementById('editId').value;
+  if (!id || !confirm('حذف المنتج نهائياً؟')) return;
+  await dbRemove(`products/${id}`);
+  await dbRemove(`inventory/${currentPhone}/${id}`);
+  closeModal('editProductModal');
+  alert('✅ تم الحذف');
+};
+
+// ===== المخزن =====
+function loadInventory() {
+  if (!isMerchant) return;
+  db.ref(`inventory/${currentPhone}`).on('value', snap => {
+    const items = [];
+    snap.forEach(c => items.push({...c.val(), _key: c.key}));
+    renderInventory(items);
+  });
+}
+
+function renderInventory(items) {
+  const el = document.getElementById('inventoryList');
+  if (!items.length) {
+    el.innerHTML = `<div style="text-align:center;padding:30px;color:#999"><div style="font-size:40px">📦</div><p>مخزنك فارغ</p></div>`;
+    return;
+  }
+  el.innerHTML = items.map(p => {
+    const now = Date.now();
+    const inAds = (now - p.timestamp) < AD_DURATION;
+    return `
+    <div class="inventory-row">
+      ${p.imageUrl ? `<img src="${p.imageUrl}" style="width:48px;height:48px;border-radius:10px;object-fit:cover">` : '<div style="width:48px;height:48px;border-radius:10px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:20px">🛒</div>'}
+      <div style="flex:1;min-width:0">
+        <p style="font-weight:700;font-size:13px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name||''}</p>
+        <p style="font-size:11px;color:#666;margin:2px 0">💰 ${p.price||''}</p>
+        <p style="font-size:10px;color:${inAds?'#15803d':'#999'}">${inAds?'📺 نشط في الإعلانات':'⏰ انتهى وقت الإعلان'}</p>
+      </div>
+      <button onclick="openEditProduct('${p.id||p._key}')" style="background:#EFF6FF;color:#2563eb;border:none;padding:7px 10px;border-radius:8px;font-size:12px;cursor:pointer;font-family:'Cairo',sans-serif">✏️</button>
+    </div>`;
+  }).join('');
+}
+
+// ===== استيراد Excel =====
+document.getElementById('excelImport').onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    try {
+      const workbook = XLSX.read(ev.target.result, {type:'binary'});
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet);
+      if (!rows.length) { alert('الملف فارغ'); return; }
+
+      let count = 0;
+      const profile = await dbGet(`profiles/${currentPhone}`) || {};
+
+      for (const row of rows) {
+        const name = row['اسم المنتج'] || row['name'] || row['Name'] || '';
+        if (!name) continue;
+        const product = {
+          name: String(name),
+          desc: String(row['الوصف'] || row['desc'] || row['Description'] || ''),
+          price: String(row['السعر'] || row['price'] || row['Price'] || 'اتصل للسعر'),
+          wa1: String(row['واتساب'] || row['whatsapp'] || profile.wa1 || currentPhone || ''),
+          whatsapp: String(row['واتساب'] || row['whatsapp'] || profile.wa1 || currentPhone || ''),
+          storeAddress: String(row['العنوان'] || row['address'] || profile.address || ''),
+          storeName: profile.storeName || currentUser?.storeName || 'متجر',
+          userPhone: currentPhone, imageUrl: null, timestamp: Date.now(), id: ''
         };
+        const ref = await dbPush('products', product);
+        await db.ref(`products/${ref.key}/id`).set(ref.key);
+        await db.ref(`inventory/${currentPhone}/${ref.key}`).set({...product, id: ref.key});
+        count++;
+      }
+      alert(`✅ تم استيراد ${count} منتج من Excel!`);
+    } catch(err) { alert('❌ خطأ في قراءة الملف: ' + err.message); }
+  };
+  reader.readAsBinaryString(file);
+  e.target.value = '';
+};
 
-        // Cloudinary Config - ⚠️ استبدل your_cloud_name باسم حسابك
-        const CLOUDINARY_CLOUD_NAME = "dfufqyxew";
-        const CLOUDINARY_UPLOAD_PRESET = "ml_default";
+// ===== الإعلانات =====
+function loadAdsBar() {
+  db.ref('ads').on('value', snap => {
+    const ads = [];
+    snap.forEach(c => ads.push(c.val().text || ''));
+    const el = document.getElementById('adsTicker');
+    el.textContent = ads.length ? ads.join(' 🔥 ') : '🔥 مملكة التجار | تواصل مع آلاف التجار الآن 🔥';
+  });
+}
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+async function getPromo(p) {
+  if (promoCache[p.id]) return promoCache[p.id];
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:60,
+        messages:[{role:'user', content:`جملتان ترويجيتان قصيرتان بالعربية لمنتج "${p.name}"${p.price?' بسعر '+p.price:''}. فقط الجملتان.`}]
+      })
+    });
+    const d = await r.json();
+    const text = d.content?.[0]?.text?.trim() || `🔥 ${p.name} — عرض لا يُفوَّت!`;
+    promoCache[p.id] = text;
+    return text;
+  } catch(e) { return `🔥 ${p.name} — جودة عالية وسعر ممتاز!`; }
+}
 
-        // ====================== رفع الصور إلى Cloudinary ======================
-        async function uploadImageToCloudinary(file) {
-            return new Promise((resolve, reject) => {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-                    method: 'POST',
-                    body: formData
-                }).then(response => response.json()).then(data => {
-                    if(data.secure_url) resolve(data.secure_url);
-                    else reject(new Error('فشل رفع الصورة'));
-                }).catch(error => reject(error));
-            });
-        }
+function startAdsSlideshow() {
+  if (adTimer) clearInterval(adTimer);
+  adPaused = false;
+  document.getElementById('adPauseBtn').textContent = '⏸';
+  const now = Date.now();
+  adList = allProducts.filter(p => (now - p.timestamp) < AD_DURATION);
+  if (!adList.length) {
+    document.getElementById('adImageArea').innerHTML = '<div style="height:240px;display:flex;align-items:center;justify-content:center;color:#555;font-size:14px;background:#111">لا توجد إعلانات نشطة</div>';
+    document.getElementById('adName').textContent = 'لا توجد منتجات';
+    document.getElementById('adPrice').textContent = '';
+    document.getElementById('adStore').textContent = '';
+    document.getElementById('adPromo').textContent = 'أضف منتجات لتظهر هنا';
+    return;
+  }
+  adIdx = 0;
+  showAdSlide(0);
+  adTimer = setInterval(() => { if (!adPaused) { adIdx = (adIdx+1) % adList.length; showAdSlide(adIdx); } }, AD_INTERVAL);
+}
 
-        let currentUserPhone = null, currentUserData = null, isAdmin = false;
-        const ADMIN_NUMBER = "01022495795";
+async function showAdSlide(idx) {
+  if (!adList.length) return;
+  adIdx = ((idx % adList.length) + adList.length) % adList.length;
+  const p = adList[adIdx];
+  document.getElementById('adCounter').textContent = `${adIdx+1}/${adList.length}`;
+  document.getElementById('adName').textContent = p.name || '';
+  document.getElementById('adPrice').textContent = isMerchant && p.price ? '💰 ' + p.price : '';
+  document.getElementById('adStore').textContent = `🏪 ${p.storeName||''} ${p.storeAddress ? '· 📍'+p.storeAddress : ''}`;
+  const wa = (p.wa1 || p.whatsapp || '').replace(/[^0-9]/g, '');
+  document.getElementById('adWhatsappLink').href = wa ? `https://wa.me/2${wa}` : '#';
+  // صورة
+  const imgArea = document.getElementById('adImageArea');
+  if (p.imageUrl) imgArea.innerHTML = `<img src="${p.imageUrl}" class="ad-img-full">`;
+  else imgArea.innerHTML = `<div class="ad-img-placeholder">🛒</div>`;
+  // progress bar
+  const fill = document.getElementById('adProgressFill');
+  fill.style.animation = 'none'; fill.offsetHeight;
+  fill.style.animation = 'adprog 5s linear forwards';
+  // AI promo
+  document.getElementById('adPromo').textContent = '🤖 جارٍ التوليد...';
+  getPromo(p).then(t => { if (document.getElementById('adPromo')) document.getElementById('adPromo').textContent = t; });
+}
 
-        // ====================== التنقل بالإنتر ======================
-        function setupEnterNavigation() {
-            const forms = [
-                { inputs: ['loginPhone', 'loginPassword'], submitBtn: 'doLoginBtn' },
-                { inputs: ['reqName', 'reqPhone', 'reqStore', 'reqClientWord'], submitBtn: 'submitRequestBtn' },
-                { inputs: ['profileStoreName', 'profileAddress', 'profileWhatsapp', 'profileWhatsapp2', 'profilePhone'], submitBtn: 'saveProfileBtn' },
-                { inputs: ['prodName', 'prodDesc', 'prodPrice'], submitBtn: 'submitProductBtn' },
-                { inputs: ['adminName', 'adminPhone', 'adminStore', 'adminPassword'], submitBtn: 'addUserBtn' }
-            ];
-            
-            forms.forEach(form => {
-                form.inputs.forEach((inputId, idx) => {
-                    const input = document.getElementById(inputId);
-                    if(input) {
-                        input.addEventListener('keypress', (e) => {
-                            if(e.key === 'Enter') {
-                                e.preventDefault();
-                                const nextInput = form.inputs[idx + 1];
-                                if(nextInput) {
-                                    document.getElementById(nextInput)?.focus();
-                                } else {
-                                    document.getElementById(form.submitBtn)?.click();
-                                }
-                            }
-                        });
-                    }
-                });
-            });
-            
-            // للشات
-            const chatInput = document.getElementById('chatInput');
-            if(chatInput) {
-                chatInput.addEventListener('keypress', (e) => {
-                    if(e.key === 'Enter') {
-                        e.preventDefault();
-                        document.getElementById('sendChatBtn')?.click();
-                    }
-                });
-            }
-        }
+window.nextAd = function() { showAdSlide(adIdx+1); }
+window.prevAd = function() { showAdSlide(adIdx-1); }
+window.toggleAdPause = function() {
+  adPaused = !adPaused;
+  document.getElementById('adPauseBtn').textContent = adPaused ? '▶' : '⏸';
+  if (!adPaused) { const fill = document.getElementById('adProgressFill'); fill.style.animation='none'; fill.offsetHeight; fill.style.animation='adprog 5s linear forwards'; }
+}
 
-        // ====================== إنشاء حساب المدير ======================
-        async function setupAdminIfNotExists() {
-            try {
-                const snapshot = await db.ref(`users/${ADMIN_NUMBER}`).once('value');
-                if(!snapshot.exists()) {
-                    await db.ref(`users/${ADMIN_NUMBER}`).set({
-                        name: "المدير العام", storeName: "مملكة التجار", password: "010224",
-                        clientWord: "admin@123", active: true, isAdmin: true, createdAt: Date.now()
-                    });
-                    console.log("✅ تم إنشاء حساب المدير");
-                }
-            } catch(e) { console.log(e); }
-        }
-        setupAdminIfNotExists();
+// ===== الشات =====
+function trackPresence() {
+  if (!currentPhone) return;
+  const ref = db.ref(`presence/${currentPhone}`);
+  ref.set({ name: currentUser?.name || 'مستخدم', online: true, lastSeen: Date.now() });
+  ref.onDisconnect().update({ online: false, lastSeen: Date.now() });
+  db.ref('presence').on('value', snap => {
+    let c = 0; snap.forEach(x => { if (x.val().online) c++; });
+    const el = document.getElementById('onlineCount');
+    if (el) el.textContent = c + ' متصل الآن';
+  });
+}
 
-        // ====================== تسجيل الدخول ======================
-        async function loginUser(phone, password) {
-            try {
-                const snapshot = await db.ref(`users/${phone}`).once('value');
-                const user = snapshot.val();
-                if(user && user.password === password && user.active === true) {
-                    currentUserPhone = phone; currentUserData = user; isAdmin = (phone === ADMIN_NUMBER);
-                    localStorage.setItem('loggedInPhone', phone);
-                    document.getElementById('loginScreen').classList.add('hidden');
-                    document.getElementById('appScreen').classList.remove('hidden');
-                    document.getElementById('welcomeMsg').innerHTML = `مرحباً ${user.name || 'تاجر'} ${isAdmin ? '👑' : ''}`;
-                    if(isAdmin) document.getElementById('openAdminPanelBtn').classList.remove('hidden');
-                    else document.getElementById('openAdminPanelBtn').classList.add('hidden');
-                    loadProducts(); startBannerSlider(); loadChatMessages(); loadAdsBar();
-                    return true;
-                }
-                return false;
-            } catch(e) { return false; }
-        }
+function loadChat() {
+  db.ref('chatMessages').orderByChild('timestamp').limitToLast(100).on('value', snap => {
+    const msgs = [];
+    snap.forEach(c => { const v = c.val(); v._key = c.key; msgs.push(v); });
+    renderChat(msgs);
+    // تعليم مقروءة
+    msgs.forEach(m => {
+      if (m._key && m.senderPhone !== currentPhone) {
+        db.ref(`chatMessages/${m._key}/readBy/${currentPhone}`).set(true).catch(()=>{});
+      }
+    });
+  });
+}
 
-        document.getElementById('doLoginBtn').onclick = async () => {
-            const phone = document.getElementById('loginPhone').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-            if(phone && password) {
-                const success = await loginUser(phone, password);
-                if(!success) alert('❌ رقم أو كلمة سر غير صحيحة');
-            } else alert('من فضلك أدخل الرقم وكلمة السر');
-        };
+function renderChat(msgs) {
+  const el = document.getElementById('chatMessages');
+  if (!msgs.length) { el.innerHTML = '<div style="text-align:center;color:#999;padding:20px;font-size:13px">لا توجد رسائل بعد</div>'; return; }
+  el.innerHTML = msgs.map(m => {
+    const isMe = m.senderPhone === currentPhone;
+    const canDel = isMe || isAdmin;
+    const time = new Date(m.timestamp).toLocaleTimeString('ar', {hour:'2-digit',minute:'2-digit'});
+    let ticks = '';
+    if (isMe) {
+      if (m.readBy && Object.keys(m.readBy).length > 0) ticks = '<span class="tick blue">✓✓</span>';
+      else if (m.status === 'delivered') ticks = '<span class="tick">✓✓</span>';
+      else ticks = '<span class="tick">✓</span>';
+    }
+    return `
+    <div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};margin-bottom:4px">
+      ${!isMe ? `<span style="font-size:10px;font-weight:700;color:#075E54;margin:0 4px 2px">${m.senderName||'مستخدم'}</span>` : ''}
+      <div class="msg-bubble ${isMe?'msg-me':'msg-other'}" style="position:relative">
+        ${m.imageUrl ? (m.imageUrl.startsWith('data:audio')||m.imageUrl.includes('/audio/')
+          ? `<audio controls src="${m.imageUrl}" style="max-width:200px;height:32px"></audio>`
+          : `<img src="${m.imageUrl}" style="max-width:200px;border-radius:8px;display:block;margin-bottom:4px" onclick="window.open('${m.imageUrl}')">`)
+          : ''}
+        ${m.text ? `<span style="font-size:13px;line-height:1.5">${m.text}</span>` : ''}
+        <div class="msg-time">${time} ${ticks}
+          ${canDel ? `<span onclick="delMsg('${m._key}')" style="margin-right:4px;cursor:pointer;color:#ccc;font-size:11px">🗑</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
 
-        // ====================== شريط الإعلانات ======================
-        function loadAdsBar() {
-            db.ref('ads').on('value', (snapshot) => {
-                const ads = []; snapshot.forEach(child => ads.push(child.val()));
-                const container = document.getElementById('adsSlider');
-                if(!container) return;
-                if(ads.length === 0) container.innerHTML = '<span class="mx-4">🔥 عروض حصرية لمملكة التجار | أضف منتجك الآن وتواصل مع آلاف التجار 🔥</span>';
-                else {
-                    let html = '';
-                    ads.forEach(ad => { html += `<span class="mx-8">${ad.text || '🔥 عرض خاص'}</span>`; });
-                    container.innerHTML = html;
-                }
-            });
-        }
+window.delMsg = async (key) => {
+  if (!key || !confirm('حذف الرسالة؟')) return;
+  await dbRemove(`chatMessages/${key}`);
+};
 
-        // ====================== الشات ======================
-        async function sendChatMessage(text, imageFile = null, audioBlob = null) {
-            if(!text && !imageFile && !audioBlob) return;
-            let imageUrl = null;
-            const msgId = Date.now().toString() + Math.random().toString(36).substring(2, 6);
-            const messagesContainer = document.getElementById('chatMessages');
-            const tempDiv = document.createElement('div');
-            tempDiv.id = `temp-${msgId}`;
-            tempDiv.className = 'flex justify-end';
-            tempDiv.innerHTML = `<div class="message-bubble message-sent p-3 shadow-sm opacity-70"><p>${text || '⏳ جاري الإرسال...'}</p><p class="text-[10px] text-gray-400">⌛</p></div>`;
-            messagesContainer.appendChild(tempDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            try {
-                if(imageFile) imageUrl = await uploadImageToCloudinary(imageFile);
-                if(audioBlob) { const reader = new FileReader(); imageUrl = await new Promise((resolve) => { reader.onloadend = () => resolve(reader.result); reader.readAsDataURL(audioBlob); }); }
-                const messageData = { text: text || '', imageUrl: imageUrl, senderPhone: currentUserPhone, senderName: currentUserData?.name || 'تاجر', timestamp: Date.now(), status: 'sent' };
-                const newRef = await db.ref('chatMessages').push(messageData);
-                await db.ref(`chatMessages/${newRef.key}/status`).set('delivered');
-                await db.ref(`chatMessages/${newRef.key}/id`).set(newRef.key);
-                document.getElementById(`temp-${msgId}`)?.remove();
-            } catch(e) { document.getElementById(`temp-${msgId}`)?.remove(); alert('❌ فشل إرسال الرسالة'); }
-        }
-        
-        function renderChatMessages(messages) {
-            const container = document.getElementById('chatMessages');
-            if(!container) return;
-            if(messages.length === 0) { container.innerHTML = '<div class="text-center text-gray-400 py-10">✨ لا توجد رسائل بعد ✨</div>'; return; }
-            container.innerHTML = messages.map(msg => {
-                const isMe = (msg.senderPhone === currentUserPhone);
-                let statusIcon = '';
-                if(isMe) { if(msg.status === 'sent') statusIcon = '✔️'; else if(msg.status === 'delivered') statusIcon = '✔️✔️'; else statusIcon = '⏳'; }
-                return `<div class="flex ${isMe ? 'justify-end' : 'justify-start'}"><div class="message-bubble ${isMe ? 'message-sent' : 'message-received'} p-3 shadow-sm"><p class="text-xs font-bold text-green-700 mb-1">${isMe ? 'أنا' : (msg.senderName || 'تاجر')}</p>${msg.imageUrl ? (msg.imageUrl.startsWith('data:') ? `<audio controls src="${msg.imageUrl}" class="w-48"></audio>` : `<img src="${msg.imageUrl}" class="max-w-[200px] rounded-xl mb-2 cursor-pointer" onclick="window.open('${msg.imageUrl}')">`) : ''}${msg.text ? `<p>${msg.text}</p>` : ''}<p class="text-[10px] text-gray-400 text-left mt-1">${new Date(msg.timestamp).toLocaleTimeString('ar')} ${statusIcon}</p></div></div>`;
-            }).join('');
-            container.scrollTop = container.scrollHeight;
-        }
-        
-        function loadChatMessages() { db.ref('chatMessages').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => { const messages = []; snapshot.forEach(child => messages.push(child.val())); renderChatMessages(messages); }); }
-        
-        document.getElementById('sendChatBtn').onclick = async () => { const input = document.getElementById('chatInput'); if(input.value.trim()) { await sendChatMessage(input.value.trim()); input.value = ''; } };
-        document.getElementById('attachImageBtn').onclick = () => { let input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.onchange = async (e) => { if(e.target.files[0]) { await sendChatMessage('', e.target.files[0]); } }; input.click(); };
-        
-        let mediaRecorder, audioChunks, isRecording = false;
-        document.getElementById('voiceRecordBtn').onclick = async () => {
-            if(isRecording) { mediaRecorder?.stop(); document.getElementById('voiceRecordBtn').classList.remove('recording'); isRecording = false; }
-            else { try { const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); mediaRecorder = new MediaRecorder(stream); audioChunks = []; mediaRecorder.ondataavailable = e => audioChunks.push(e.data); mediaRecorder.onstop = async () => { const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); await sendChatMessage('', null, audioBlob); stream.getTracks().forEach(track => track.stop()); }; mediaRecorder.start(); isRecording = true; document.getElementById('voiceRecordBtn').classList.add('recording'); setTimeout(() => { if(isRecording) mediaRecorder.stop(); }, 30000); } catch(e) { alert("مشكلة في المايك"); } }
-        };
-        document.getElementById('emojiBtn').onclick = () => { const input = document.getElementById('chatInput'); input.value += " 😊👍❤️🔥🎉"; input.focus(); };
+document.getElementById('clearAllMsgsBtn').onclick = async () => {
+  if (!confirm('مسح كل الرسائل؟')) return;
+  await dbRemove('chatMessages');
+};
 
-        // ====================== طلب تسجيل ======================
-        document.getElementById('submitRequestBtn').onclick = async () => {
-            const name = document.getElementById('reqName').value.trim();
-            const phone = document.getElementById('reqPhone').value.trim();
-            let store = document.getElementById('reqStore').value.trim();
-            const clientWord = document.getElementById('reqClientWord').value.trim();
-            if(!name || !phone) { alert('❌ الاسم ورقم الهاتف مطلوبين'); return; }
-            if(!store) store = name;
-            await db.ref('requests').push({ name, phone, store, clientWord: clientWord || 'غير محدد', status: 'pending', timestamp: Date.now() });
-            alert(`✅ تم إرسال طلبك! كلمة العميل: ${clientWord || 'غير محدد'}\nسيتم التواصل معك قريباً`);
-            document.getElementById('requestModal').classList.add('hidden');
-            document.getElementById('reqName').value = ''; document.getElementById('reqPhone').value = ''; document.getElementById('reqStore').value = ''; document.getElementById('reqClientWord').value = '';
-        };
+async function sendMsg(text, imageUrl=null) {
+  if (!text && !imageUrl) return;
+  const ref = await dbPush('chatMessages', {
+    text: text||'', imageUrl, senderPhone: currentPhone,
+    senderName: currentUser?.name||'مستخدم', timestamp: Date.now(), status:'sent'
+  });
+  await db.ref(`chatMessages/${ref.key}/status`).set('delivered');
+  await db.ref(`chatMessages/${ref.key}/_key`).set(ref.key);
+}
 
-        // ====================== المنتجات ======================
-        let selectedImageFile = null;
-        document.getElementById('prodImage').onchange = (e) => { if(e.target.files[0]) { selectedImageFile = e.target.files[0]; const reader = new FileReader(); reader.onload = (event) => { document.getElementById('imagePreview').classList.remove('hidden'); document.getElementById('previewImg').src = event.target.result; }; reader.readAsDataURL(selectedImageFile); } };
-        document.getElementById('aiGenerateBtn').onclick = () => { const name = document.getElementById('prodName').value.trim(); if(!name) { alert('اكتب اسم المنتج أولاً'); return; } const templates = [`🔥 ${name} - جودة عالية وسعر ممتاز!`, `✨ ${name} - أحدث إصدار`, `⚡ ${name} - عروض خاصة`]; document.getElementById('prodDesc').value = templates[Math.floor(Math.random() * templates.length)]; };
-        
-        async function addProductToDB(product, imageFile) {
-            const newRef = db.ref('products').push();
-            product.id = newRef.key; product.userPhone = currentUserPhone; product.timestamp = Date.now();
-            const profileSnap = await db.ref(`profiles/${currentUserPhone}`).once('value');
-            const profile = profileSnap.val() || {};
-            product.storeName = profile.storeName || currentUserData?.storeName || currentUserData?.name || 'متجر';
-            product.storeAddress = profile.address || ''; product.whatsapp = profile.whatsapp || '';
-            if(imageFile) { try { const imageUrl = await uploadImageToCloudinary(imageFile); if(imageUrl) product.imageUrl = imageUrl; } catch(e) { console.error(e); } }
-            await newRef.set(product); return productId;
-        }
-        
-        document.getElementById('submitProductBtn').onclick = async () => {
-            const name = document.getElementById('prodName').value.trim();
-            const price = document.getElementById('prodPrice').value.trim();
-            if(!name) { alert('❌ اسم المنتج مطلوب'); return; }
-            await addProductToDB({ name, desc: document.getElementById('prodDesc').value.trim(), price: price || 'غير محدد' }, selectedImageFile);
-            document.getElementById('productModal').classList.add('hidden');
-            document.getElementById('prodName').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodPrice').value = ''; document.getElementById('prodImage').value = ''; document.getElementById('imagePreview').classList.add('hidden'); selectedImageFile = null;
-            alert('✅ تم إضافة المنتج بنجاح!'); loadProducts();
-        };
+document.getElementById('sendChatBtn').onclick = async () => {
+  const inp = document.getElementById('chatInput');
+  if (inp.value.trim()) { await sendMsg(inp.value.trim()); inp.value = ''; }
+};
+document.getElementById('chatInput').onkeypress = e => { if (e.key === 'Enter') document.getElementById('sendChatBtn').click(); };
+document.getElementById('emojiBtn').onclick = () => { const i = document.getElementById('chatInput'); i.value += '😊'; i.focus(); };
+document.getElementById('attachImageBtn').onclick = () => {
+  const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*,video/*';
+  inp.onchange = async e => {
+    if (!e.target.files[0]) return;
+    const url = await uploadImage(e.target.files[0]);
+    await sendMsg('', url);
+  };
+  inp.click();
+};
 
-        function loadProducts() { db.ref('products').orderByChild('timestamp').limitToLast(30).on('value', (snapshot) => { const products = []; snapshot.forEach(child => products.unshift(child.val())); renderProducts(products); updateBanner(products); }); }
-        function renderProducts(products) {
-            const container = document.getElementById('productsGrid');
-            if(!container) return;
-            if(products.length === 0) { container.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">✨ لا توجد منتجات حالياً ✨</div>'; return; }
-            container.innerHTML = products.map(prod => `<div class="bg-white rounded-2xl shadow-md p-4 product-card relative">${prod.imageUrl ? `<img src="${prod.imageUrl}" class="w-full h-40 object-cover rounded-xl mb-3">` : '<div class="text-5xl mb-2 text-center">🛒📱</div>'}<h3 class="font-bold text-lg">${prod.name}</h3><p class="text-gray-600 text-sm line-clamp-2">${prod.desc || ''}</p><p class="text-green-700 font-bold mt-2">💰 ${prod.price}</p><p class="text-gray-500 text-sm">🏪 ${prod.storeName || 'متجر'}</p><a href="https://wa.me/${(prod.whatsapp || '').replace(/[^0-9]/g, '')}" target="_blank" class="mt-3 bg-green-500 text-white px-4 py-2 rounded-full text-sm w-full block text-center">📲 واتساب</a>${(prod.userPhone === currentUserPhone || isAdmin) ? `<button onclick="window.openEditModal('${prod.id}', \`${prod.name.replace(/`/g, '\\`')}\`, \`${(prod.desc || '').replace(/`/g, '\\`')}\`, \`${prod.price.replace(/`/g, '\\`')}\`)" class="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs">✏️ تعديل</button>` : ''}</div>`).join('');
-        }
-        
-        let bannerProducts = [], bannerIndex = 0, bannerInterval;
-        function updateBanner(products) { bannerProducts = products.slice(0, 5); if(bannerProducts.length) showBanner(0); }
-        function showBanner(idx) { const prod = bannerProducts[idx]; if(!prod) return; document.getElementById('bannerName').innerHTML = prod.name; document.getElementById('bannerStore').innerHTML = prod.storeName || ''; document.getElementById('bannerPrice').innerHTML = prod.price || ''; if(prod.imageUrl) { document.getElementById('bannerImage').src = prod.imageUrl; document.getElementById('bannerImage').classList.remove('hidden'); } else document.getElementById('bannerImage').classList.add('hidden'); document.getElementById('bannerWhatsapp').href = `https://wa.me/${(prod.whatsapp || '').replace(/[^0-9]/g, '')}`; }
-        function startBannerSlider() { if(bannerInterval) clearInterval(bannerInterval); bannerInterval = setInterval(() => { if(bannerProducts.length) { bannerIndex = (bannerIndex + 1) % bannerProducts.length; showBanner(bannerIndex); } }, 7000); }
-        
-        // ====================== الملف الشخصي ======================
-        async function loadProfile() { const snapshot = await db.ref(`profiles/${currentUserPhone}`).once('value'); const p = snapshot.val() || {}; document.getElementById('profileStoreName').value = p.storeName || ''; document.getElementById('profileAddress').value = p.address || ''; document.getElementById('profileWhatsapp').value = p.whatsapp || ''; document.getElementById('profileWhatsapp2').value = p.whatsapp2 || ''; document.getElementById('profilePhone').value = p.phone || ''; }
-        document.getElementById('openProfileBtn').onclick = () => { loadProfile(); document.getElementById('profileModal').classList.remove('hidden'); };
-        document.getElementById('saveProfileBtn').onclick = async () => { await db.ref(`profiles/${currentUserPhone}`).set({ storeName: document.getElementById('profileStoreName').value, address: document.getElementById('profileAddress').value, whatsapp: document.getElementById('profileWhatsapp').value, whatsapp2: document.getElementById('profileWhatsapp2').value, phone: document.getElementById('profilePhone').value, updatedAt: Date.now() }); alert('✅ تم حفظ بيانات متجرك'); document.getElementById('profileModal').classList.add('hidden'); };
-        
-        // ====================== لوحة تحكم ADMIN ======================
-        async function loadUsersListFixed() {
-            const snapshot = await db.ref('users').once('value');
-            const users = snapshot.val();
-            const container = document.getElementById('usersList');
-            if(!users || Object.keys(users).length === 0) { container.innerHTML = '<div class="text-gray-500 text-center py-4">📭 لا يوجد تجار مسجلين</div>'; return; }
-            container.innerHTML = '';
-            for(let phone in users) { const user = users[phone]; container.innerHTML += `<div class="flex justify-between items-center bg-white p-3 rounded-xl border mb-2"><div><p class="font-bold">${user.name || 'بدون اسم'}</p><p class="text-sm text-gray-600">📱 ${phone}</p><p class="text-sm text-gray-600">🏪 ${user.storeName || '-'}</p><p class="text-xs text-green-600">🔑 ${user.password || 'غير محددة'}</p></div><div class="flex gap-2"><button onclick="window.adminResetPassword('${phone}')" class="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm">🔄 تغيير</button><button onclick="window.adminDeleteUserFixed('${phone}')" class="bg-red-500 text-white px-3 py-1 rounded-full text-sm">🗑 حذف</button></div></div>`; }
-        }
-        async function loadRequestsListFixed() {
-            const snapshot = await db.ref('requests').once('value');
-            const requests = snapshot.val();
-            const container = document.getElementById('requestsList');
-            if(!requests || Object.keys(requests).length === 0) { container.innerHTML = '<div class="text-gray-500 text-center py-4">📭 لا توجد طلبات جديدة</div>'; return; }
-            container.innerHTML = '';
-            for(let id in requests) { const req = requests[id]; container.innerHTML += `<div class="flex justify-between items-center bg-white p-3 rounded-xl border mb-2"><div><p class="font-bold">${req.name || 'بدون اسم'}</p><p class="text-sm text-gray-600">📱 ${req.phone || '-'}</p><p class="text-sm text-gray-600">🏪 ${req.store || '-'}</p><p class="text-xs text-gray-400">${req.timestamp ? new Date(req.timestamp).toLocaleString('ar') : ''}</p></div><div class="flex gap-2"><button onclick="window.adminAcceptRequestFixed('${id}', '${req.phone}', '${req.name}', '${req.store}')" class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">✅ قبول</button><button onclick="window.adminDeleteRequestFixed('${id}')" class="bg-gray-400 text-white px-3 py-1 rounded-full text-sm">❌ حذف</button></div></div>`; }
-        }
-        window.adminDeleteUserFixed = async (phone) => { if(confirm('حذف التاجر؟')) { await db.ref(`users/${phone}`).remove(); loadUsersListFixed(); } };
-        window.adminResetPassword = async (phone) => { const newPassword = prompt("كلمة السر الجديدة", "mkt123"); if(newPassword && newPassword.length >= 4) { await db.ref(`users/${phone}/password`).set(newPassword); alert('✅ تم التغيير'); loadUsersListFixed(); } else if(newPassword) alert('❌ 4 أحرف على الأقل'); };
-        window.adminAcceptRequestFixed = async (requestId, phone, name, store) => { const password = Math.random().toString(36).substring(2, 8); await db.ref(`users/${phone}`).set({ name, storeName: store || 'متجر', password, active: true, createdAt: Date.now() }); await db.ref(`requests/${requestId}`).remove(); alert(`✅ تم التفعيل\nالرقم: ${phone}\nكلمة السر: ${password}`); loadUsersListFixed(); loadRequestsListFixed(); };
-        window.adminDeleteRequestFixed = async (id) => { if(confirm('حذف الطلب؟')) { await db.ref(`requests/${id}`).remove(); loadRequestsListFixed(); } };
-        document.getElementById('addUserBtn').onclick = async () => { const name = document.getElementById('adminName').value.trim(); const phone = document.getElementById('adminPhone').value.trim(); const store = document.getElementById('adminStore').value.trim(); const password = document.getElementById('adminPassword').value.trim(); if(!name || !phone) { alert('الاسم والرقم مطلوبين'); return; } await db.ref(`users/${phone}`).set({ name, storeName: store || 'متجر', password: password || 'mkt123', active: true, createdAt: Date.now() }); alert(`✅ تم إضافة التاجر`); loadUsersListFixed(); };
-        document.getElementById('openAdminPanelBtn').onclick = () => { if(isAdmin) { loadUsersListFixed(); loadRequestsListFixed(); document.getElementById('adminPanel').classList.remove('hidden'); } else alert('للمدير فقط'); };
-        
-        // ====================== إغلاق المودالات ======================
-        document.getElementById('closeProductModal')?.addEventListener('click', () => document.getElementById('productModal')?.classList.add('hidden'));
-        document.getElementById('closeProfileModal')?.addEventListener('click', () => document.getElementById('profileModal')?.classList.add('hidden'));
-        document.getElementById('closeEditModal')?.addEventListener('click', () => document.getElementById('editProductModal')?.classList.add('hidden'));
-        document.getElementById('closeAdminPanel')?.addEventListener('click', () => document.getElementById('adminPanel')?.classList.add('hidden'));
-        document.getElementById('closeRequestModal')?.addEventListener('click', () => document.getElementById('requestModal')?.classList.add('hidden'));
-        document.getElementById('openAddProductBtn')?.addEventListener('click', () => document.getElementById('productModal')?.classList.remove('hidden'));
-        document.getElementById('refreshProducts')?.addEventListener('click', () => loadProducts());
-        document.getElementById('logoutMainBtn')?.addEventListener('click', () => { localStorage.removeItem('loggedInPhone'); location.reload(); });
-        document.getElementById('tabProducts').onclick = () => { document.getElementById('productsSection').classList.remove('hidden'); document.getElementById('chatSection').classList.add('hidden'); document.getElementById('tabProducts').classList.add('border-b-2', 'border-green-700', 'text-green-700'); document.getElementById('tabChat').classList.remove('border-b-2', 'border-green-700', 'text-green-700'); };
-        document.getElementById('openChatBtn').onclick = () => { document.getElementById('productsSection').classList.add('hidden'); document.getElementById('chatSection').classList.remove('hidden'); document.getElementById('tabChat').classList.add('border-b-2', 'border-green-700', 'text-green-700'); document.getElementById('tabProducts').classList.remove('border-b-2', 'border-green-700', 'text-green-700'); loadChatMessages(); };
-        document.getElementById('openRequestBtn').onclick = () => document.getElementById('requestModal').classList.remove('hidden');
-        
-        window.openEditModal = (id, name, desc, price) => {
-            window.currentEditProduct = { id, name, desc, price };
-            document.getElementById('editProductId').value = id;
-            document.getElementById('editName').value = name;
-            document.getElementById('editDesc').value = desc;
-            document.getElementById('editPrice').value = price;
-            document.getElementById('editProductModal').classList.remove('hidden');
-        };
-        document.getElementById('updateProductBtn').onclick = async () => { if(window.currentEditProduct) { await db.ref(`products/${window.currentEditProduct.id}`).update({ name: document.getElementById('editName').value, desc: document.getElementById('editDesc').value, price: document.getElementById('editPrice').value }); alert('تم التحديث'); document.getElementById('editProductModal').classList.add('hidden'); loadProducts(); } };
-        document.getElementById('deleteProductBtn').onclick = async () => { if(window.currentEditProduct && confirm('حذف المنتج؟')) { await db.ref(`products/${window.currentEditProduct.id}`).remove(); alert('تم الحذف'); document.getElementById('editProductModal').classList.add('hidden'); loadProducts(); } };
-        
-        // بدء التطبيق
-        setupEnterNavigation();
-        loadProducts(); startBannerSlider(); loadAdsBar();
-        const savedPhone = localStorage.getItem('loggedInPhone');
-        if(savedPhone) { db.ref(`users/${savedPhone}`).once('value').then(snap => { if(snap.val()) { currentUserPhone = savedPhone; currentUserData = snap.val(); isAdmin = (savedPhone === ADMIN_NUMBER); document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('appScreen').classList.remove('hidden'); document.getElementById('welcomeMsg').innerHTML = `مرحباً ${currentUserData.name || 'تاجر'} ${isAdmin ? '👑' : ''}`; if(isAdmin) document.getElementById('openAdminPanelBtn').classList.remove('hidden'); loadProducts(); loadChatMessages(); loadAdsBar(); } }); }
-    </script>
+document.getElementById('voiceRecordBtn').onclick = async () => {
+  const btn = document.getElementById('voiceRecordBtn');
+  if (isRecording) {
+    mediaRecorder?.stop(); btn.classList.remove('recording'); isRecording = false; btn.textContent = '🎤';
+  } else {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+      mediaRecorder = new MediaRecorder(stream); audioChunks = [];
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(audioChunks, {type:'audio/webm'});
+        const reader = new FileReader();
+        reader.onloadend = async () => { await sendMsg('', reader.result); };
+        reader.readAsDataURL(blob);
+        stream.getTracks().forEach(t => t.stop());
+      };
+      mediaRecorder.start(); isRecording = true;
+      btn.classList.add('recording'); btn.textContent = '⏹';
+      setTimeout(() => { if (isRecording) document.getElementById('voiceRecordBtn').click(); }, 60000);
+    } catch(e) { alert('مشكلة في المايك'); }
+  }
+};
+
+// ===== التبرعات =====
+function loadDonations() {
+  db.ref('donationCases').orderByChild('timestamp').on('value', snap => {
+    const cases = [];
+    snap.forEach(c => cases.unshift({...c.val(), _key: c.key}));
+    renderDonations(cases);
+    document.getElementById('dStatCases').textContent = cases.length;
+    let donors=0, amount=0;
+    cases.forEach(c => { donors += c.donorsCount||0; amount += c.collected||0; });
+    document.getElementById('dStatDonors').textContent = donors;
+    document.getElementById('dStatAmount').textContent = amount.toLocaleString('ar-EG');
+  });
+}
+
+function renderDonations(cases) {
+  const el = document.getElementById('donationsList');
+  if (!cases.length) { el.innerHTML = '<div style="text-align:center;padding:30px;color:#999;font-size:13px"><div style="font-size:40px">💝</div><p>لا توجد حالات</p></div>'; return; }
+  el.innerHTML = cases.map(c => {
+    const pct = Math.min(100, Math.round(((c.collected||0)/c.target)*100));
+    const rem = Math.max(0, c.target-(c.collected||0));
+    const done = pct >= 100;
+    const isOwner = isMerchant && (c.ownerPhone === currentPhone || isAdmin);
+    return `
+    <div class="donation-card">
+      ${c.imageUrl ? `<img src="${c.imageUrl}" style="width:100%;height:140px;object-fit:cover">` : ''}
+      <div style="padding:12px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+          <h3 style="font-size:14px;font-weight:800;margin:0;flex:1">${c.title||''}</h3>
+          <span style="font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700;background:${done?'#ede9fe':pct<30?'#fee2e2':'#dcfce7'};color:${done?'#7c3aed':pct<30?'#dc2626':'#15803d'};margin-right:6px">${done?'✅ مكتمل':pct<30?'🔴 عاجل':'🟢 نشط'}</span>
+        </div>
+        ${c.desc ? `<p style="font-size:12px;color:#666;margin:0 0 8px;line-height:1.5">${c.desc}</p>` : ''}
+        <div class="progress-wrap"><div class="progress-fill ${done?'done':pct<30?'urgent':''}" style="width:${pct}%"></div></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);text-align:center;margin:8px 0">
+          <div><p style="font-size:15px;font-weight:800;color:#15803d;margin:0">${(c.collected||0).toLocaleString()}</p><p style="font-size:10px;color:#999;margin:0">تم</p></div>
+          <div><p style="font-size:15px;font-weight:800;color:#f97316;margin:0">${rem.toLocaleString()}</p><p style="font-size:10px;color:#999;margin:0">متبقي</p></div>
+          <div><p style="font-size:15px;font-weight:800;color:#2563eb;margin:0">${(c.target||0).toLocaleString()}</p><p style="font-size:10px;color:#999;margin:0">الهدف</p></div>
+        </div>
+        ${c.wallet ? `<p style="font-size:11px;color:#666;margin:0 0 6px">📱 ${c.wallet} ${c.payMethods?'· '+c.payMethods:''}</p>` : ''}
+        ${c.recentDonors?.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${c.recentDonors.map(d=>`<span style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:99px;padding:2px 8px;font-size:11px;color:#15803d">💚 ${d.name} — ${d.amount} ج.م</span>`).join('')}</div>` : ''}
+        <div style="display:flex;gap:6px">
+          ${!done ? `<button onclick="openDonateNow('${c._key||c.id}')" style="flex:1;background:#25D366;color:#fff;border:none;padding:9px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif">❤️ تبرع</button>` : '<div style="flex:1;background:#ede9fe;color:#7c3aed;padding:9px;border-radius:10px;font-size:13px;font-weight:700;text-align:center">🎉 اكتمل!</div>'}
+          ${isOwner ? `<button onclick="deleteDonation('${c._key||c.id}')" style="background:#fee2e2;color:#dc2626;border:none;padding:9px 14px;border-radius:10px;font-size:13px;cursor:pointer;font-family:'Cairo',sans-serif">🗑</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('openNewDonationBtn').onclick = () => {
+  if (!isMerchant) { alert('التبرعات للتجار المسجلين فقط'); return; }
+  openModal('donationModal');
+};
+
+document.getElementById('donationImage').onchange = async e => {
+  if (e.target.files[0]) {
+    donImgFile = e.target.files[0];
+    const b64 = await compressImage(e.target.files[0]);
+    document.getElementById('donImgPrev').src = b64;
+    document.getElementById('donImgPreview').style.display = 'block';
+  }
+};
+
+document.getElementById('submitDonationBtn').onclick = async () => {
+  const title = document.getElementById('donTitle').value.trim();
+  const target = parseFloat(document.getElementById('donTarget').value);
+  const wallet = document.getElementById('donWallet').value.trim();
+  if (!title || !target) { alert('العنوان والمبلغ مطلوبان'); return; }
+  const btn = document.getElementById('submitDonationBtn');
+  btn.disabled=true; btn.textContent='⏳';
+  let imageUrl = null;
+  if (donImgFile) imageUrl = await uploadImage(donImgFile);
+  const profile = await dbGet(`profiles/${currentPhone}`) || {};
+  await dbPush('donationCases', {
+    title, desc: document.getElementById('donDesc').value.trim(),
+    target, collected:0, donorsCount:0, wallet,
+    payMethods: document.getElementById('donPayMethods').value.trim(),
+    ownerPhone: currentPhone, ownerName: currentUser?.name||'تاجر',
+    ownerStore: profile.storeName||currentUser?.storeName||'متجر',
+    imageUrl, status:'active', timestamp: Date.now()
+  });
+  closeModal('donationModal');
+  document.getElementById('donTitle').value='';
+  document.getElementById('donDesc').value='';
+  document.getElementById('donTarget').value='';
+  document.getElementById('donWallet').value='';
+  donImgFile=null;
+  btn.disabled=false; btn.textContent='📤 نشر الحالة';
+  alert('✅ تم نشر الحالة');
+};
+
+window.openDonateNow = async (caseId) => {
+  const snap = await dbGet(`donationCases/${caseId}`);
+  if (!snap) return;
+  document.getElementById('donateCaseId').value = caseId;
+  const rem = Math.max(0, snap.target-(snap.collected||0));
+  document.getElementById('donateModalInfo').innerHTML = `
+    <p style="font-weight:800;margin:0 0 4px">${snap.title}</p>
+    <div class="progress-wrap"><div class="progress-fill" style="width:${Math.min(100,Math.round(((snap.collected||0)/snap.target)*100))}%"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px">
+      <span style="color:#15803d;font-weight:700">تم: ${(snap.collected||0).toLocaleString()} ج.م</span>
+      <span style="color:#f97316;font-weight:700">متبقي: ${rem.toLocaleString()} ج.م</span>
+    </div>
+    ${snap.wallet?`<p style="font-size:11px;margin:6px 0 0;color:#555">📱 ${snap.wallet}</p>`:''}`;
+  donReceiptFile = null;
+  document.getElementById('donateAmount').value='';
+  document.getElementById('donateNote').value='';
+  document.getElementById('donReceiptPreview').style.display='none';
+  openModal('donateNowModal');
+};
+
+document.getElementById('donateReceipt').onchange = async e => {
+  if (e.target.files[0]) {
+    donReceiptFile = e.target.files[0];
+    const b64 = await compressImage(e.target.files[0]);
+    document.getElementById('donReceiptImg').src = b64;
+    document.getElementById('donReceiptPreview').style.display = 'block';
+  }
+};
+
+document.getElementById('submitDonateBtn').onclick = async () => {
+  const caseId = document.getElementById('donateCaseId').value;
+  const amount = parseFloat(document.getElementById('donateAmount').value);
+  if (!amount || amount<=0) { alert('أدخل مبلغاً صحيحاً'); return; }
+  const btn = document.getElementById('submitDonateBtn');
+  btn.disabled=true; btn.textContent='⏳';
+  let receiptUrl=null;
+  if (donReceiptFile) receiptUrl = await uploadImage(donReceiptFile);
+  const caseData = await dbGet(`donationCases/${caseId}`);
+  const newCollected = (caseData?.collected||0) + amount;
+  const recentDonors = (caseData?.recentDonors||[]);
+  recentDonors.unshift({name: currentUser?.name||'تاجر', amount});
+  await dbUpdate(`donationCases/${caseId}`, {
+    collected: newCollected,
+    donorsCount: (caseData?.donorsCount||0)+1,
+    recentDonors: recentDonors.slice(0,3),
+    status: newCollected>=(caseData?.target||0)?'done':'active'
+  });
+  await dbPush(`donationCases/${caseId}/donors`, {
+    donorPhone: currentPhone, donorName: currentUser?.name||'تاجر',
+    amount, note: document.getElementById('donateNote').value.trim(),
+    receiptUrl, timestamp: Date.now()
+  });
+  closeModal('donateNowModal');
+  btn.disabled=false; btn.textContent='❤️ تأكيد التبرع';
+  alert(newCollected>=(caseData?.target||0)?'🎉 اكتمل الهدف! جزاك الله خيراً':'✅ تم تسجيل تبرعك! جزاك الله خيراً');
+};
+
+window.deleteDonation = async (id) => {
+  if (!confirm('حذف الحالة؟')) return;
+  await dbRemove(`donationCases/${id}`);
+};
+
+// ===== الملف الشخصي =====
+document.getElementById('topProfileBtn').onclick = async () => {
+  if (!isMerchant) { alert('الملف الشخصي للتجار فقط'); return; }
+  const p = await dbGet(`profiles/${currentPhone}`) || {};
+  document.getElementById('profileStore').value = p.storeName||currentUser?.storeName||'';
+  document.getElementById('profileAddress').value = p.address||'';
+  document.getElementById('profileWa1').value = p.wa1||currentPhone||'';
+  document.getElementById('profileWa2').value = p.wa2||'';
+  document.getElementById('profileWa3').value = p.wa3||'';
+  openModal('profileModal');
+};
+
+document.getElementById('saveProfileBtn').onclick = async () => {
+  await dbSet(`profiles/${currentPhone}`, {
+    storeName: document.getElementById('profileStore').value,
+    address: document.getElementById('profileAddress').value,
+    wa1: document.getElementById('profileWa1').value,
+    wa2: document.getElementById('profileWa2').value,
+    wa3: document.getElementById('profileWa3').value,
+    updatedAt: Date.now()
+  });
+  closeModal('profileModal');
+  alert('✅ تم حفظ بيانات متجرك');
+};
+
+// ===== طلب التسجيل =====
+document.getElementById('openRequestBtn').onclick = () => openModal('requestModal');
+document.getElementById('submitRequestBtn').onclick = async () => {
+  const name = document.getElementById('reqName').value.trim();
+  const phone = document.getElementById('reqPhone').value.trim();
+  if (!name || !phone) { alert('الاسم والرقم مطلوبان'); return; }
+  const store = document.getElementById('reqStore').value.trim() || name;
+  const address = document.getElementById('reqAddress').value.trim();
+  await dbPush('requests', { name, phone, store, address, status:'pending', timestamp: Date.now() });
+  // إرسال إشعار للمدير عبر واتساب
+  const msg = encodeURIComponent(`🆕 طلب تسجيل جديد:\nالاسم: ${name}\nالرقم: ${phone}\nالمحل: ${store}\nالعنوان: ${address}`);
+  window.open(`https://wa.me/${ADMIN_WA}?text=${msg}`, '_blank');
+  closeModal('requestModal');
+  alert('✅ تم إرسال طلبك! سيتم التواصل معك قريباً');
+};
+
+// ===== لوحة تحكم المدير =====
+document.getElementById('topAdminBtn').onclick = () => {
+  if (!isAdmin) return;
+  openModal('adminModal');
+  loadUsersList(); loadRequestsList();
+};
+
+window.adminTab = function(tab) {
+  ['users','requests','products','manage'].forEach(t => {
+    document.getElementById('apanel-'+t).style.display='none';
+    const btn = document.getElementById('atab-'+t);
+    btn.style.background='#f0f0f0'; btn.style.color='#333';
+  });
+  document.getElementById('apanel-'+tab).style.display='block';
+  const btn = document.getElementById('atab-'+tab);
+  btn.style.background='#075E54'; btn.style.color='#fff';
+  if (tab==='products') loadAdminProducts();
+  if (tab==='manage') loadAdminStats();
+}
+
+async function loadUsersList() {
+  const users = await dbGet('users') || {};
+  const el = document.getElementById('usersList');
+  if (!Object.keys(users).length) { el.innerHTML='<p style="color:#999;text-align:center;padding:10px;font-size:12px">لا يوجد تجار</p>'; return; }
+  el.innerHTML = Object.entries(users).map(([ph,u])=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#f8f8f8;border-radius:10px;padding:10px;margin-bottom:6px">
+      <div><p style="font-weight:700;font-size:13px;margin:0">${u.name||'-'}</p><p style="font-size:11px;color:#666;margin:2px 0">${ph} · ${u.storeName||'-'} · 🔑${u.password||'-'}</p></div>
+      <div style="display:flex;gap:4px">
+        <button onclick="adminResetPw('${ph}')" style="background:#FFF3CD;color:#856404;border:none;padding:5px 8px;border-radius:6px;font-size:11px;cursor:pointer">🔑</button>
+        <button onclick="adminDelUser('${ph}')" style="background:#fee2e2;color:#dc2626;border:none;padding:5px 8px;border-radius:6px;font-size:11px;cursor:pointer">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+async function loadRequestsList() {
+  const reqs = await dbGet('requests') || {};
+  const el = document.getElementById('requestsList');
+  if (!Object.keys(reqs).length) { el.innerHTML='<p style="color:#999;text-align:center;padding:20px;font-size:12px">لا توجد طلبات</p>'; return; }
+  el.innerHTML = Object.entries(reqs).map(([id,r])=>`
+    <div style="background:#fffbeb;border-radius:10px;padding:10px;margin-bottom:8px">
+      <p style="font-weight:700;font-size:13px;margin:0">${r.name||'-'}</p>
+      <p style="font-size:11px;color:#666;margin:3px 0">${r.phone||'-'} · ${r.store||'-'}</p>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <button onclick="adminAccept('${id}','${r.phone}','${(r.name||'').replace(/'/g,"\\'")}','${(r.store||'').replace(/'/g,"\\'")}','${r.phone}')" style="flex:1;background:#25D366;color:#fff;border:none;padding:6px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif">✅ قبول</button>
+        <button onclick="adminDelReq('${id}')" style="background:#f0f0f0;color:#666;border:none;padding:6px 10px;border-radius:8px;font-size:12px;cursor:pointer">❌</button>
+      </div>
+    </div>`).join('');
+}
+
+window.adminResetPw = async (ph) => {
+  const pw = prompt('كلمة السر الجديدة', 'mkt123');
+  if (!pw || pw.length<4) return;
+  await dbUpdate(`users/${ph}`, {password:pw});
+  alert('✅ تم التغيير');
+  loadUsersList();
+};
+
+window.adminDelUser = async (ph) => {
+  if (!confirm('حذف التاجر؟')) return;
+  await dbRemove(`users/${ph}`);
+  loadUsersList();
+};
+
+window.adminAccept = async (id, phone, name, store, notifyPhone) => {
+  const pw = Math.random().toString(36).substring(2,8);
+  await dbSet(`users/${phone}`, { name, storeName:store||'متجر', password:pw, active:true, type:'merchant', createdAt:Date.now() });
+  await dbRemove(`requests/${id}`);
+  // إشعار المتقدم على واتساب
+  const msg = encodeURIComponent(`✅ تم قبولك في مملكة التجار!\nرقمك: ${phone}\nكلمة السر: ${pw}\nحمّل التطبيق وسجّل دخولك 🎉`);
+  window.open(`https://wa.me/2${phone.replace(/[^0-9]/g,'')}?text=${msg}`, '_blank');
+  alert(`✅ تم القبول!\nكلمة السر: ${pw}`);
+  loadUsersList(); loadRequestsList();
+};
+
+window.adminDelReq = async (id) => {
+  if (!confirm('حذف الطلب؟')) return;
+  await dbRemove(`requests/${id}`);
+  loadRequestsList();
+};
+
+document.getElementById('addUserBtn').onclick = async () => {
+  const name=document.getElementById('adminName').value.trim();
+  const phone=document.getElementById('adminPhone').value.trim();
+  const store=document.getElementById('adminStore').value.trim();
+  const pw=document.getElementById('adminPassword').value.trim()||'mkt123';
+  if (!name||!phone) { alert('الاسم والرقم مطلوبان'); return; }
+  await dbSet(`users/${phone}`, {name, storeName:store||'متجر', password:pw, active:true, type:'merchant', createdAt:Date.now()});
+  alert('✅ تم إضافة التاجر');
+  loadUsersList();
+};
+
+async function loadAdminProducts() {
+  const snap = await dbGet('products') || {};
+  const el = document.getElementById('adminProductsList');
+  const items = Object.entries(snap);
+  if (!items.length) { el.innerHTML='<p style="color:#999;text-align:center;padding:10px;font-size:12px">لا توجد منتجات</p>'; return; }
+  el.innerHTML = items.map(([key,p])=>`
+    <div style="display:flex;align-items:center;gap:8px;background:#f8f8f8;border-radius:10px;padding:8px;margin-bottom:6px">
+      ${p.imageUrl?`<img src="${p.imageUrl}" style="width:40px;height:40px;border-radius:8px;object-fit:cover">`:'<div style="width:40px;height:40px;border-radius:8px;background:#e0e0e0;display:flex;align-items:center;justify-content:center">🛒</div>'}
+      <div style="flex:1;min-width:0"><p style="font-size:12px;font-weight:700;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name||''}</p><p style="font-size:10px;color:#666;margin:0">${p.storeName||''} · ${p.price||''}</p></div>
+      <button onclick="adminDelProduct('${key}')" style="background:#fee2e2;color:#dc2626;border:none;padding:5px 8px;border-radius:6px;font-size:11px;cursor:pointer">🗑</button>
+    </div>`).join('');
+}
+
+window.adminDelProduct = async (key) => {
+  if (!confirm('حذف المنتج؟')) return;
+  await dbRemove(`products/${key}`);
+  loadAdminProducts();
+};
+
+async window.adminClearProducts = function() {
+  if (!confirm('مسح كل المنتجات؟')) return;
+  await dbRemove('products');
+  alert('✅ تم');
+}
+async window.adminClearChat = function() {
+  if (!confirm('مسح كل الرسائل؟')) return;
+  await dbRemove('chatMessages');
+  alert('✅ تم');
+}
+async window.adminClearDonations = function() {
+  if (!confirm('مسح كل التبرعات؟')) return;
+  await dbRemove('donationCases');
+  alert('✅ تم');
+}
+
+async window.loadAdminStats = function() {
+  const el = document.getElementById('adminStats');
+  try {
+    const [u,p,m,d,r] = await Promise.all([
+      dbGet('users'), dbGet('products'), dbGet('chatMessages'),
+      dbGet('donationCases'), dbGet('requests')
+    ]);
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
+        <div style="background:#f0fdf4;border-radius:8px;padding:8px"><div style="font-size:20px;font-weight:900;color:#15803d">${u?Object.keys(u).length:0}</div><div style="font-size:10px;color:#666">تاجر</div></div>
+        <div style="background:#eff6ff;border-radius:8px;padding:8px"><div style="font-size:20px;font-weight:900;color:#2563eb">${p?Object.keys(p).length:0}</div><div style="font-size:10px;color:#666">منتج</div></div>
+        <div style="background:#fef9c3;border-radius:8px;padding:8px"><div style="font-size:20px;font-weight:900;color:#92400e">${r?Object.keys(r).length:0}</div><div style="font-size:10px;color:#666">طلب</div></div>
+        <div style="background:#fdf2f8;border-radius:8px;padding:8px"><div style="font-size:20px;font-weight:900;color:#9d174d">${m?Object.keys(m).length:0}</div><div style="font-size:10px;color:#666">رسالة</div></div>
+        <div style="background:#fff1f2;border-radius:8px;padding:8px"><div style="font-size:20px;font-weight:900;color:#be123c">${d?Object.keys(d).length:0}</div><div style="font-size:10px;color:#666">تبرع</div></div>
+      </div>`;
+  } catch(e) { el.textContent = 'تعذّر التحميل'; }
+}
+
+// ===== Modal Helpers =====
+function openModal(id) {
+  const m = document.getElementById(id);
+  m.style.display='flex'; m.classList.add('open');
+}
+function closeModal(id) {
+  const m = document.getElementById(id);
+  m.style.display='none'; m.classList.remove('open');
+}
+// إغلاق بالضغط خارج المودال
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.onclick = e => { if (e.target === m) closeModal(m.id); };
+});
+
+// ===== Logout =====
+document.getElementById('logoutBtn').onclick = () => {
+  if (adTimer) clearInterval(adTimer);
+  localStorage.removeItem('mkt_phone');
+  localStorage.removeItem('mkt_type');
+  localStorage.removeItem('mkt_name');
+  location.reload();
+};
+
+// ===== استئناف الجلسة عند فتح الصفحة =====
+(function checkSession() {
+  const savedPhone = localStorage.getItem('mkt_phone');
+  const savedType = localStorage.getItem('mkt_type');
+  if (!savedPhone) return;
+  if (savedType === 'customer') {
+    currentPhone = savedPhone;
+    currentUser = { name: localStorage.getItem('mkt_name')||'عميل', type:'customer', active:true };
+    isMerchant=false; isAdmin=false;
+    startApp();
+  } else if (savedType === 'merchant') {
+    dbGet(`users/${savedPhone}`).then(user => {
+      if (user && user.active) {
+        currentPhone=savedPhone; currentUser=user;
+        isMerchant=true; isAdmin=savedPhone===ADMIN_PHONE;
+        startApp();
+      } else localStorage.removeItem('mkt_phone');
+    }).catch(()=>{});
+  }
+})();
+</script>
 </body>
 </html>
